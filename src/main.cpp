@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "average_calculator.h"
 #include "rotation_calculator.h"
 
 float loop_time;
@@ -7,6 +8,7 @@ float last_write_time;
 int wheel_sensor_pin = 2;
 int wheel_sensor_value;
 
+average_calculator test_calc = average_calculator();
 rotation_calculator wheel_rotation_calculator = rotation_calculator();
 
 void setup() {
@@ -17,7 +19,7 @@ void setup() {
 void loop() {
     loop_time = millis();
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
-    wheel_rotation_calculator.on_reading(wheel_sensor_value == HIGH, loop_time);
+    wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time);
 
     if (loop_time - last_write_time > 5000) {
         last_write_time = loop_time;
