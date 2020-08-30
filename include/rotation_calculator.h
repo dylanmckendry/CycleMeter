@@ -3,21 +3,25 @@
 
 #include "average_calculator.h"
 
+const float MILLISECONDS_IN_SECONDS = 1000;
+const int MIN_CHANGES = 3;
+const int MAX_TIME_DIFFERENCE = 10000;
+
 class rotation_calculator {
 
 public:
-    float rotations_per_unit;
+    float rotations_per_second;
 
 private:
-    float max_time_difference = 5000;
+    int changes_count;
 
     bool first_reading_change;
     bool last_reading;
-    float last_time;
+    float last_change_time;
 
     float time_difference;
 
-    average_calculator average_calculator();
+    average_calculator rotation_average;
 
 public:
     rotation_calculator();

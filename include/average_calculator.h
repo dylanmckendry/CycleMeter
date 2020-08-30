@@ -20,9 +20,9 @@ private:
 public:
     average_calculator();
     bool on_reading(float reading, float time);
+    void reset();
 
 private:
-    void reset();
 
 };
 
