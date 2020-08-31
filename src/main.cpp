@@ -120,6 +120,8 @@ FaBoLCD_PCF8574 lcd(0x27);
 
 char cadence_display[5] = "";
 char ground_velocity_display[5] = "";
+char air_velocity_display[5] = "";
+char total_power_display[5] = "";
 
 float loop_time;
 float last_write_time;
@@ -146,30 +148,30 @@ void setup() {
     lcd.setCursor(8, 1);
     lcd.print("P:");
 
-    slope_ratio = calculate_slope_ratio(slope_degrees);
-    ground_velocity = calculate_ground_velocity(wheel_rotations_second, wheel_radius);
-    dynamic_pressure = calculate_dynamic_pressure(stagnation_pressure, static_pressure, sensor_pressure_bias);
-    air_density = calculate_air_density(static_pressure, air_temperature);
-    air_velocity = calculate_air_velocity(dynamic_pressure, air_density);
-    vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
+    // slope_ratio = calculate_slope_ratio(slope_degrees);
+    // ground_velocity = calculate_ground_velocity(wheel_rotations_second, wheel_radius);
+    // dynamic_pressure = calculate_dynamic_pressure(stagnation_pressure, static_pressure, sensor_pressure_bias);
+    // air_density = calculate_air_density(static_pressure, air_temperature);
+    // air_velocity = calculate_air_velocity(dynamic_pressure, air_density);
+    // vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
 
     // cout << "slope_ratio " << slope_ratio << endl;
     // cout << "ground_velocity " << ground_velocity << endl;
     // cout << "air_velocity " << air_velocity << endl;
     // cout << "vertical_velocity " << vertical_velocity << endl;
 
-    relative_velocity = ground_velocity + air_velocity;
+    // relative_velocity = ground_velocity + air_velocity;
     
-    gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
+    // gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
 
-    inertia_power = calculate_inertia_power(total_weight, acceleration, ground_velocity);
+    // inertia_power = calculate_inertia_power(total_weight, acceleration, ground_velocity);
 
-    air_drag = calculate_air_drag(air_density, relative_velocity);
-    air_drag_power = calculate_air_drag_power(air_drag, ground_velocity);
+    // air_drag = calculate_air_drag(air_density, relative_velocity);
+    // air_drag_power = calculate_air_drag_power(air_drag, ground_velocity);
 
-    tire_resistance_power = calculate_tire_resistance_power(total_weight, slope_ratio, ground_velocity);
+    // tire_resistance_power = calculate_tire_resistance_power(total_weight, slope_ratio, ground_velocity);
  
-    total_power = gravity_power + inertia_power + air_drag_power + tire_resistance_power;
+    // total_power = gravity_power + inertia_power + air_drag_power + tire_resistance_power;
 
     // cout << "gravity_power " << gravity_power << endl;
     // cout << "inertia_power " << inertia_power << endl;
@@ -185,6 +187,18 @@ void loop() {
         ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
         cadence = calculate_cadence(wheel_rotation_calculator.rotations_per_second);
 
+        relative_velocity = ground_velocity + air_velocity;
+        
+        gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
+
+        inertia_power = calculate_inertia_power(total_weight, acceleration, ground_velocity);
+
+        air_drag = calculate_air_drag(air_density, relative_velocity);
+        air_drag_power = calculate_air_drag_power(air_drag, ground_velocity);
+
+        tire_resistance_power = calculate_tire_resistance_power(total_weight, slope_ratio, ground_velocity);
+    
+        total_power = gravity_power + inertia_power + air_drag_power + tire_resistance_power;
 
         // lcd
         lcd.setCursor(2, 0);
@@ -194,12 +208,20 @@ void loop() {
         lcd.setCursor(10, 0);
         dtostrf(cadence, 5, 1, cadence_display);
         lcd.print(cadence_display);
-        
+
+        lcd.setCursor(2, 1);
+        dtostrf(air_velocity, 5, 1, air_velocity_display);
+        lcd.print(air_velocity_display);
+
+        lcd.setCursor(10, 1);
+        dtostrf(total_power, 5, 1, total_power_display);
+        lcd.print(total_power_display);
+
         // serial
-        Serial.print("velocity: ");
-        Serial.print(ground_velocity);
-        Serial.print(", cadence: ");
-        Serial.println(cadence);
+        // Serial.print("velocity: ");
+        // Serial.print(ground_velocity);
+        // Serial.print(", cadence: ");
+        // Serial.println(cadence);
     }
 
     // if (loop_time - last_write_time > 5000) {
