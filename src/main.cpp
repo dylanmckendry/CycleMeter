@@ -120,8 +120,9 @@ float last_write_time;
 int wheel_sensor_value;
 
 
-average_calculator test_calc = average_calculator();
-rotation_calculator wheel_rotation_calculator = rotation_calculator();
+// average_calculator test_calc = average_calculator();
+rotation_calculator wheel_rotation_calculator = rotation_calculator(2, 5);
+rotation_calculator cadence_rotation_calculator = rotation_calculator(2, 3);
 
 void setup() {
     Serial.begin(9600);

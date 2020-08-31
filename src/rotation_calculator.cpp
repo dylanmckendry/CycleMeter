@@ -1,7 +1,7 @@
 #include "rotation_calculator.h"
 
-rotation_calculator::rotation_calculator() {
-    rotation_average = average_calculator();
+rotation_calculator::rotation_calculator(int average_min_readings, int average_max_readings) :
+    rotation_average(average_min_readings, average_min_readings) {
     reset();
 }
 
@@ -33,7 +33,7 @@ bool rotation_calculator::on_reading(bool reading, float time) {
     // after reset
     // first real reading
     // TODO: reset average
-    if (changes_count < MIN_READINGS) {
+    if (changes_count < MIN_CHANGES) {
         changes_count++;
         return false;
     }
@@ -43,8 +43,6 @@ bool rotation_calculator::on_reading(bool reading, float time) {
     }
 
     // this means it was true before and therefore the last true was a full circuit
- 
-
     // if we have enough averages return true
     if (!rotation_average.on_reading(MILLISECONDS_IN_SECONDS / time_difference, time)) {
         return false;

@@ -24,7 +24,7 @@ private:
     average_calculator rotation_average;
 
 public:
-    rotation_calculator();
+    rotation_calculator(int average_min_readings, int average_max_readings);
     bool on_reading(bool reading, float time);
 
 private:

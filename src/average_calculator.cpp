@@ -1,6 +1,11 @@
 #include "average_calculator.h"
 
-average_calculator::average_calculator() {
+average_calculator::average_calculator(int min_readings, int max_readings) :
+    min_readings(min_readings),
+    max_readings(max_readings) {
+    if (max_readings > MAX_READINGS) {
+        // crash
+    }
     reset();
 }
 
@@ -10,16 +15,16 @@ bool average_calculator::on_reading(float reading, float time) {
     total += reading;
 
     next_reading_index++;
-    if (next_reading_index >= MAX_READINGS)
+    if (next_reading_index >= max_readings)
     {
         next_reading_index = 0;
     }
 
-    if (number_of_readings < MAX_READINGS) {
+    if (number_of_readings < max_readings) {
         number_of_readings++;
     }
 
-    if (number_of_readings < MIN_READINGS) {
+    if (number_of_readings < min_readings) {
         return false;
     }
 
