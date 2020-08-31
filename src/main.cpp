@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <FaBoLCD_PCF8574.h>
 #include "average_calculator.h"
 #include "rotation_calculator.h"
 
@@ -40,6 +41,7 @@ float acceleration = 0; // also get from changes in speed? what if this is -ve?
 float wheel_rotations_second = 4.6;
 float crank_rotations_per_second = 1; // if not pedalling, then no power
 
+float cadence;
 float slope_ratio;
 float dynamic_pressure;
 float air_density;
@@ -114,6 +116,11 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
 int crank_sensor_pin = 2;
 int wheel_sensor_pin = 2;
 
+FaBoLCD_PCF8574 lcd(0x27);
+
+char cadence_display[5] = "";
+char ground_velocity_display[5] = "";
+
 float loop_time;
 float last_write_time;
 
@@ -128,6 +135,16 @@ void setup() {
     Serial.begin(9600);
     pinMode(crank_sensor_pin, INPUT);
     pinMode(wheel_sensor_pin, INPUT);
+
+    // LCD:
+    lcd.begin(16, 2);
+    lcd.print("S:");
+    lcd.setCursor(8, 0);
+    lcd.print("C:");
+    lcd.setCursor(0, 1);
+    lcd.print("W:");
+    lcd.setCursor(8, 1);
+    lcd.print("P:");
 
     slope_ratio = calculate_slope_ratio(slope_degrees);
     ground_velocity = calculate_ground_velocity(wheel_rotations_second, wheel_radius);
@@ -165,10 +182,24 @@ void loop() {
     loop_time = millis();
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
     if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time)) {
+        ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
+        cadence = calculate_cadence(wheel_rotation_calculator.rotations_per_second);
+
+
+        // lcd
+        lcd.setCursor(2, 0);
+        dtostrf(ground_velocity, 5, 1, ground_velocity_display);
+        lcd.print(ground_velocity_display);
+
+        lcd.setCursor(10, 0);
+        dtostrf(cadence, 5, 1, cadence_display);
+        lcd.print(cadence_display);
+        
+        // serial
         Serial.print("velocity: ");
-        Serial.print(calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius));
+        Serial.print(ground_velocity);
         Serial.print(", cadence: ");
-        Serial.println(calculate_cadence(wheel_rotation_calculator.rotations_per_second));
+        Serial.println(cadence);
     }
 
     // if (loop_time - last_write_time > 5000) {
