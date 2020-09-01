@@ -119,6 +119,8 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
 
 long micros_per_mpu_reading;
 
+FaBo9Axis fabo_9axis;
+
 int crank_sensor_pin = 2;
 int wheel_sensor_pin = 2;
 
@@ -133,19 +135,28 @@ long loop_time;
 long last_mpu_read_time;
 long last_lcd_write_time;
 
+float mpu_ax, mpu_ay, mpu_az;
+float mpu_gx, mpu_gy, mpu_gz;
+
 int wheel_sensor_value;
 
 
 // average_calculator test_calc = average_calculator();
-Madgwick filter = Madgwick();
-rotation_calculator wheel_rotation_calculator = rotation_calculator(2, 5);
-rotation_calculator cadence_rotation_calculator = rotation_calculator(2, 3);
+Madgwick filter;
+rotation_calculator wheel_rotation_calculator(2, 5);
+rotation_calculator cadence_rotation_calculator(2, 3);
 
 
 void setup() {
     long start_time = micros();
 
     Serial.begin(9600);
+
+    if (!fabo_9axis.begin()) {
+        Serial.println("Error");
+        while(1);
+    }
+
     pinMode(crank_sensor_pin, INPUT);
     pinMode(wheel_sensor_pin, INPUT);
 
@@ -195,11 +206,39 @@ void setup() {
     // cout << "total_power " << total_power << endl;
 }
 
+float convertRawAcceleration(float aRaw) {
+  // since we are using 2G range
+  // -2g maps to a raw value of -32768
+  // +2g maps to a raw value of 32767
+  
+  float a = (aRaw * 2.0) / 32768.0;
+  return a;
+}
+
+float convertRawGyro(float gRaw) {
+  // since we are using 250 degrees/seconds range
+  // -250 maps to a raw value of -32768
+  // +250 maps to a raw value of 32767
+  
+  float g = (gRaw * 250.0) / 32768.0;
+  return g;
+}
+
 void loop() {
     loop_time = micros();
 
     if (loop_time - last_mpu_read_time >= micros_per_mpu_reading) {
-        //filter.updateIMU(gx, gy, gz, ax, ay, az);
+        fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
+        fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
+
+        mpu_ax = convertRawAcceleration(mpu_ax);
+        mpu_ay = convertRawAcceleration(mpu_ay);
+        mpu_az = convertRawAcceleration(mpu_az);
+        mpu_gx = convertRawGyro(mpu_gx);
+        mpu_gy = convertRawGyro(mpu_gy);
+        mpu_gz = convertRawGyro(mpu_gz);
+
+        filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
         slope_degrees = filter.getPitch();
         last_mpu_read_time += micros_per_mpu_reading;
     }
