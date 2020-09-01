@@ -1,5 +1,9 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_BMP280.h>
+#include <FaBo9Axis_MPU9250.h>
 #include <FaBoLCD_PCF8574.h>
+#include <MadgwickAHRS.h>
 #include "average_calculator.h"
 #include "rotation_calculator.h"
 
@@ -113,6 +117,8 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
     return total_weight * sqrt((1 - pow(slope_ratio, 2))) * tire_resistance_crr * ground_velocity;
 }
 
+long micros_per_mpu_reading;
+
 int crank_sensor_pin = 2;
 int wheel_sensor_pin = 2;
 
@@ -123,20 +129,29 @@ char ground_velocity_display[5] = "";
 char air_velocity_display[5] = "";
 char total_power_display[5] = "";
 
-float loop_time;
-float last_write_time;
+long loop_time;
+long last_mpu_read_time;
+long last_lcd_write_time;
 
 int wheel_sensor_value;
 
 
 // average_calculator test_calc = average_calculator();
+Madgwick filter = Madgwick();
 rotation_calculator wheel_rotation_calculator = rotation_calculator(2, 5);
 rotation_calculator cadence_rotation_calculator = rotation_calculator(2, 3);
 
+
 void setup() {
+    long start_time = micros();
+
     Serial.begin(9600);
     pinMode(crank_sensor_pin, INPUT);
     pinMode(wheel_sensor_pin, INPUT);
+
+    filter.begin(1000);
+    micros_per_mpu_reading = 1000000 / 25;
+    last_mpu_read_time = start_time;
 
     // LCD:
     lcd.begin(16, 2);
@@ -181,7 +196,14 @@ void setup() {
 }
 
 void loop() {
-    loop_time = millis();
+    loop_time = micros();
+
+    if (loop_time - last_mpu_read_time >= micros_per_mpu_reading) {
+        //filter.updateIMU(gx, gy, gz, ax, ay, az);
+        slope_degrees = filter.getPitch();
+        last_mpu_read_time += micros_per_mpu_reading;
+    }
+
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
     if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time)) {
         ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
