@@ -135,6 +135,7 @@ long loop_time;
 long last_mpu_read_time;
 long last_power_calculation_time;
 long last_lcd_write_time;
+long last_serial_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
@@ -146,14 +147,20 @@ Madgwick filter;
 rotation_calculator wheel_rotation_calculator(2, 5);
 rotation_calculator cadence_rotation_calculator(2, 3);
 
+bool serial = true;
 
 void setup() {
     long start_time = micros();
 
-    Serial.begin(9600);
+    if (serial) {
+        Serial.begin(9600);
+    }
 
     if (!fabo_9axis.begin()) {
-        Serial.println("Error");
+        if (serial) {
+            Serial.println("Error");
+        }
+       
         while(1);
     }
 
@@ -181,11 +188,6 @@ void setup() {
     // air_velocity = calculate_air_velocity(dynamic_pressure, air_density);
     // vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
 
-    // cout << "slope_ratio " << slope_ratio << endl;
-    // cout << "ground_velocity " << ground_velocity << endl;
-    // cout << "air_velocity " << air_velocity << endl;
-    // cout << "vertical_velocity " << vertical_velocity << endl;
-
     // relative_velocity = ground_velocity + air_velocity;
     
     // gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
@@ -199,11 +201,6 @@ void setup() {
  
     // total_power = gravity_power + inertia_power + air_drag_power + tire_resistance_power;
 
-    // cout << "gravity_power " << gravity_power << endl;
-    // cout << "inertia_power " << inertia_power << endl;
-    // cout << "air_drag_power " << air_drag_power << endl;
-    // cout << "tire_resistance_power " << tire_resistance_power << endl;
-    // cout << "total_power " << total_power << endl;
 }
 
 float convertRawAcceleration(float aRaw) {
@@ -237,12 +234,6 @@ void loop() {
         // mpu_gx = convertRawGyro(mpu_gx);
         // mpu_gy = convertRawGyro(mpu_gy);
         // mpu_gz = convertRawGyro(mpu_gz);
-
-        // Serial.print(mpu_ax);
-        // Serial.print(", ");
-        // Serial.print(mpu_ay);
-        // Serial.print(", ");
-        // Serial.println(mpu_az);
 
         slope_degrees = atan2((- mpu_ax) , sqrt(mpu_ay * mpu_ay + mpu_az * mpu_az)) * 57.3;
         if (slope_degrees > 30) {
@@ -308,5 +299,38 @@ void loop() {
         lcd.setCursor(10, 1);
         dtostrf(total_power, 5, 1, total_power_display);
         lcd.print(total_power_display);
+
+        if (serial && loop_time - last_serial_write_time > 5 * 1000000) {
+            last_serial_write_time = loop_time;
+
+            Serial.print("slope_degrees: ");
+            Serial.println(slope_degrees);
+
+            Serial.print("ground_velocity: ");
+            Serial.println(ground_velocity);
+
+            Serial.print("air_velocity: ");
+            Serial.println(air_velocity);
+
+            Serial.print("vertical_velocity: ");
+            Serial.println(vertical_velocity);
+
+            Serial.print("gravity_power: ");
+            Serial.println(gravity_power);
+
+            Serial.print("inertia_power: ");
+            Serial.println(inertia_power);
+
+            Serial.print("air_drag_power: ");
+            Serial.println(air_drag_power);
+
+            Serial.print("tire_resistance_power: ");
+            Serial.println(tire_resistance_power);
+
+            Serial.print("total_power: ");
+            Serial.println(total_power);
+
+            Serial.println();
+        }
     }
 }
