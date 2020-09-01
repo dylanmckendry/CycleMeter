@@ -5,7 +5,7 @@ rotation_calculator::rotation_calculator(int average_min_readings, int average_m
     reset();
 }
 
-bool rotation_calculator::on_reading(bool reading, float time) {
+bool rotation_calculator::on_reading(bool reading, long time) {
     
     // it hasn't changed
     if (last_reading == reading) {
@@ -44,7 +44,7 @@ bool rotation_calculator::on_reading(bool reading, float time) {
 
     // this means it was true before and therefore the last true was a full circuit
     // if we have enough averages return true
-    if (!rotation_average.on_reading(MILLISECONDS_IN_SECONDS / time_difference, time)) {
+    if (!rotation_average.on_reading(MICROSECONDS_IN_SECONDS / time_difference, time)) {
         return false;
     }
 

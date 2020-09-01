@@ -119,10 +119,10 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
 
 long micros_per_mpu_reading;
 
-FaBo9Axis fabo_9axis;
+FaBo9Axis fabo_9axis(0x68);
 
 int crank_sensor_pin = 2;
-int wheel_sensor_pin = 2;
+int wheel_sensor_pin = 3;
 
 FaBoLCD_PCF8574 lcd(0x27);
 
@@ -133,15 +133,15 @@ char total_power_display[5] = "";
 
 long loop_time;
 long last_mpu_read_time;
+long last_power_calculation_time;
 long last_lcd_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
 
+int crank_sensor_value;
 int wheel_sensor_value;
 
-
-// average_calculator test_calc = average_calculator();
 Madgwick filter;
 rotation_calculator wheel_rotation_calculator(2, 5);
 rotation_calculator cadence_rotation_calculator(2, 3);
@@ -229,27 +229,51 @@ void loop() {
 
     if (loop_time - last_mpu_read_time >= micros_per_mpu_reading) {
         fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
-        fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
+        // fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
 
-        mpu_ax = convertRawAcceleration(mpu_ax);
-        mpu_ay = convertRawAcceleration(mpu_ay);
-        mpu_az = convertRawAcceleration(mpu_az);
-        mpu_gx = convertRawGyro(mpu_gx);
-        mpu_gy = convertRawGyro(mpu_gy);
-        mpu_gz = convertRawGyro(mpu_gz);
+        // mpu_ax = convertRawAcceleration(mpu_ax);
+        // mpu_ay = convertRawAcceleration(mpu_ay);
+        // mpu_az = convertRawAcceleration(mpu_az);
+        // mpu_gx = convertRawGyro(mpu_gx);
+        // mpu_gy = convertRawGyro(mpu_gy);
+        // mpu_gz = convertRawGyro(mpu_gz);
 
-        filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
-        slope_degrees = filter.getPitch();
+        // Serial.print(mpu_ax);
+        // Serial.print(", ");
+        // Serial.print(mpu_ay);
+        // Serial.print(", ");
+        // Serial.println(mpu_az);
+
+        slope_degrees = atan2((- mpu_ax) , sqrt(mpu_ay * mpu_ay + mpu_az * mpu_az)) * 57.3;
+        if (slope_degrees > 30) {
+            slope_degrees = 30;
+        } else if (slope_degrees < -30) {
+            slope_degrees = -30;
+        }
+        slope_ratio = calculate_slope_ratio(slope_degrees);
+        vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
+
+        // filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
+        // slope_degrees = filter.getPitch();
+
         last_mpu_read_time += micros_per_mpu_reading;
     }
 
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
     if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time)) {
         ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
-        cadence = calculate_cadence(wheel_rotation_calculator.rotations_per_second);
 
         relative_velocity = ground_velocity + air_velocity;
-        
+    }
+
+    crank_sensor_value = digitalRead(crank_sensor_pin);
+    if (cadence_rotation_calculator.on_reading(crank_sensor_value == LOW, loop_time)) {
+        cadence = calculate_cadence(cadence_rotation_calculator.rotations_per_second);
+    }
+
+    if (loop_time - last_power_calculation_time > 1 * 1000000) {
+        last_power_calculation_time = loop_time;
+
         gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
 
         inertia_power = calculate_inertia_power(total_weight, acceleration, ground_velocity);
@@ -261,32 +285,28 @@ void loop() {
     
         total_power = gravity_power + inertia_power + air_drag_power + tire_resistance_power;
 
-        // lcd
+        if (total_power < 0) {
+            total_power = 0;
+        }
+    }
+
+    if (loop_time - last_lcd_write_time > 1 * 1000000) {
+        last_lcd_write_time = loop_time;
+
         lcd.setCursor(2, 0);
         dtostrf(ground_velocity, 5, 1, ground_velocity_display);
         lcd.print(ground_velocity_display);
+
+        lcd.setCursor(2, 1);
+        dtostrf(slope_degrees, 5, 1, air_velocity_display);
+        lcd.print(air_velocity_display);
 
         lcd.setCursor(10, 0);
         dtostrf(cadence, 5, 1, cadence_display);
         lcd.print(cadence_display);
 
-        lcd.setCursor(2, 1);
-        dtostrf(air_velocity, 5, 1, air_velocity_display);
-        lcd.print(air_velocity_display);
-
         lcd.setCursor(10, 1);
         dtostrf(total_power, 5, 1, total_power_display);
         lcd.print(total_power_display);
-
-        // serial
-        // Serial.print("velocity: ");
-        // Serial.print(ground_velocity);
-        // Serial.print(", cadence: ");
-        // Serial.println(cadence);
     }
-
-    // if (loop_time - last_write_time > 5000) {
-    //     last_write_time = loop_time;
-    //     Serial.println(wheel_rotation_calculator.rotations_per_unit);
-    // }
 }

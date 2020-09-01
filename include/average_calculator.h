@@ -15,12 +15,12 @@ private:
 
     int next_reading_index;
     float total;
-    float number_of_readings;
-    float last_time;
+    long number_of_readings;
+    long last_time;
 
 public:
     average_calculator(int min_readings, int max_readings);
-    bool on_reading(float reading, float time);
+    bool on_reading(float reading, long time);
     void reset();
 
 private:

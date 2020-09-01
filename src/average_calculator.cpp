@@ -9,7 +9,7 @@ average_calculator::average_calculator(int min_readings, int max_readings) :
     reset();
 }
 
-bool average_calculator::on_reading(float reading, float time) {
+bool average_calculator::on_reading(float reading, long time) {
     total = total - readings[next_reading_index];
     readings[next_reading_index] = reading;
     total += reading;
