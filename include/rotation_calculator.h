@@ -19,7 +19,7 @@ private:
     bool last_reading;
     long last_change_time;
 
-    long time_difference;
+    float time_difference;
 
     average_calculator rotation_average;
 
