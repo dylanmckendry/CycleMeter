@@ -207,7 +207,7 @@ void setup() {
 
     lcd.begin(16, 2);
 
-    filter.begin(1000);
+    filter.begin(25);
     micros_per_mpu_reading = 1000000 / 25;
     last_mpu_read_time = start_time;
 
@@ -284,11 +284,11 @@ void loop() {
         // } else if (slope_degrees < -30) {
         //     slope_degrees = -30;
         // }
-        // slope_ratio = calculate_slope_ratio(slope_degrees);
-        // vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
-
+       
         filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
         slope_degrees = -filter.getPitch() + slope_degrees_correction;
+        slope_ratio = calculate_slope_ratio(slope_degrees);
+        vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
 
         last_mpu_read_time += micros_per_mpu_reading;
     }
@@ -362,6 +362,9 @@ void loop() {
 
             Serial.print("air_velocity: ");
             Serial.println(air_velocity);
+
+            Serial.print("relative_velocity: ");
+            Serial.println(relative_velocity);
 
             Serial.print("vertical_velocity: ");
             Serial.println(vertical_velocity);
