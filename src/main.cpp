@@ -54,7 +54,7 @@ float dynamic_pressure;
 float air_density;
 float ground_velocity;
 float air_velocity;
-float relative_velocity;
+float wind_velocity;
 float vertical_velocity;
 float air_drag;
 
@@ -99,8 +99,8 @@ float calculate_air_density(float static_pressure, float air_temperature) {
     return static_pressure / (dry_air_constant * (air_temperature + celsius_to_kelvin));
 }
 
-float calculate_air_drag(float air_density, float relative_velocity) {
-    return .5 * coef_friction * air_density * pow(relative_velocity, 2) * frontal_area;
+float calculate_air_drag(float air_density, float air_velocity) {
+    return .5 * coef_friction * air_density * pow(air_velocity, 2) * frontal_area;
 }
 
 // power
@@ -149,16 +149,15 @@ long last_serial_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
-float ax, ay, az;
-float gx, gy, gz;
 
 int crank_sensor_value;
 int wheel_sensor_value;
 
 Madgwick filter;
-rotation_calculator wheel_rotation_calculator(2, 5);
+average_calculator slope_degrees_calculator(2, 3);
+rotation_calculator wheel_rotation_calculator(2, 3);
 rotation_calculator cadence_rotation_calculator(2, 3);
-average_calculator air_velocity_calculator(2, 5);
+average_calculator air_velocity_calculator(2, 3);
 
 bool serial = true;
 
@@ -208,8 +207,8 @@ void setup() {
     lcd.begin(16, 2);
 
     filter.begin(25);
-    micros_per_mpu_reading = 1000000 / 25;
-    last_mpu_read_time = start_time;
+    // micros_per_mpu_reading = 1000000 / 25;
+    // last_mpu_read_time = start_time;
 
     for (int i = 0; i < 5; i++)
     {
@@ -246,37 +245,20 @@ void setup() {
 }
 
 
-float convertRawAcceleration(float aRaw) {
-  // since we are using 2G range
-  // -2g maps to a raw value of -32768
-  // +2g maps to a raw value of 32767
-  
-  float a = (aRaw * 2.0) / 32768.0;
-  return a;
-}
-
-float convertRawGyro(float gRaw) {
-  // since we are using 250 degrees/seconds range
-  // -250 maps to a raw value of -32768
-  // +250 maps to a raw value of 32767
-  
-  float g = (gRaw * 250.0) / 32768.0;
-  return g;
-}
-
 void loop() {
     loop_time = micros();
 
-    if (loop_time - last_mpu_read_time >= micros_per_mpu_reading) {
+    if (fabo_9axis.checkDataReady()) {
         fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
         fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
         
-        // ax = convertRawAcceleration(mpu_ax);
-        // ay = convertRawAcceleration(mpu_ay);
-        // az = convertRawAcceleration(mpu_az);
-        // gx = convertRawGyro(mpu_gx);
-        // gy = convertRawGyro(mpu_gy);
-        // gz = convertRawGyro(mpu_gz);
+        filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
+
+        if (slope_degrees_calculator.on_reading(-filter.getPitch(), loop_time)) {
+            slope_degrees = slope_degrees_calculator.average + slope_degrees_correction;
+            slope_ratio = calculate_slope_ratio(slope_degrees);
+            vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
+        }
 
         // slope_degrees = (atan2((mpu_ax) , sqrt(mpu_ay * mpu_ay + mpu_az * mpu_az)) * 57.3) + slope_degrees_correction;
         // if (slope_degrees > 30) {
@@ -285,18 +267,14 @@ void loop() {
         //     slope_degrees = -30;
         // }
        
-        filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
-        slope_degrees = -filter.getPitch() + slope_degrees_correction;
-        slope_ratio = calculate_slope_ratio(slope_degrees);
-        vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
-
-        last_mpu_read_time += micros_per_mpu_reading;
+        // last_mpu_read_time += micros_per_mpu_reading;
     }
 
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
     if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time)) {
         ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
     }
+
     // crank_sensor_value = digitalRead(crank_sensor_pin);
     // if (cadence_rotation_calculator.on_reading(crank_sensor_value == LOW, loop_time)) {
     //     cadence = calculate_cadence(cadence_rotation_calculator.rotations_per_second);
@@ -311,7 +289,7 @@ void loop() {
         air_velocity = air_velocity_calculator.average;
     }
 
-    relative_velocity = ground_velocity + air_velocity;
+    wind_velocity = air_velocity - ground_velocity;
 
     if (loop_time - last_power_calculation_time > 1 * 1000000) {
         last_power_calculation_time = loop_time;
@@ -320,7 +298,7 @@ void loop() {
 
         inertia_power = calculate_inertia_power(total_weight, acceleration, ground_velocity);
 
-        air_drag = calculate_air_drag(air_density, relative_velocity);
+        air_drag = calculate_air_drag(air_density, air_velocity);
         air_drag_power = calculate_air_drag_power(air_drag, ground_velocity);
 
         tire_resistance_power = calculate_tire_resistance_power(total_weight, slope_ratio, ground_velocity);
@@ -336,11 +314,11 @@ void loop() {
         last_lcd_write_time = loop_time;
 
         lcd.setCursor(2, 0);
-        dtostrf(ground_velocity, 5, 1, ground_velocity_display);
+        dtostrf(ground_velocity * 3.6, 5, 1, ground_velocity_display);
         lcd.print(ground_velocity_display);
 
         lcd.setCursor(2, 1);
-        dtostrf(air_velocity, 5, 1, air_velocity_display);
+        dtostrf(air_velocity * 3.6, 5, 1, air_velocity_display);
         lcd.print(air_velocity_display);
 
         lcd.setCursor(10, 0);
@@ -363,8 +341,8 @@ void loop() {
             Serial.print("air_velocity: ");
             Serial.println(air_velocity);
 
-            Serial.print("relative_velocity: ");
-            Serial.println(relative_velocity);
+            Serial.print("wind_velocity: ");
+            Serial.println(wind_velocity);
 
             Serial.print("vertical_velocity: ");
             Serial.println(vertical_velocity);
