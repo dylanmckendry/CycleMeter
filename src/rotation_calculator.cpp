@@ -1,7 +1,7 @@
 #include "rotation_calculator.h"
 
 rotation_calculator::rotation_calculator(int average_min_readings, int average_max_readings) :
-    rotation_average(average_min_readings, average_min_readings) {
+    rotation_average(1, average_min_readings, average_min_readings) {
     reset();
 }
 
