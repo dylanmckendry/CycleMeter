@@ -8,7 +8,7 @@
 #include "average_calculator.h"
 #include "rotation_calculator.h"
 
-//#define LCD true;
+#define LCD true;
 #define DEBUG true;
 
 // need to look at humidity with BME280 for better air pressure
@@ -129,9 +129,12 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
 
 int mpu_sample_frequency = 50;
 long micros_per_mpu_reading = MICROSECONDS_IN_SECONDS / mpu_sample_frequency;
-long micros_per_air_velocity_calculation = MICROSECONDS_IN_SECONDS / 100;
-long measured_micros_per_mpu_reading;
+long micros_per_air_velocity_calculation = MICROSECONDS_IN_SECONDS / 10;
+long micros_per_power_calculation = MICROSECONDS_IN_SECONDS / 10;
+long micros_per_lcd_write = MICROSECONDS_IN_SECONDS * 5;
+long micros_per_serial_write = MICROSECONDS_IN_SECONDS * 10;
 
+long measured_micros_per_mpu_reading;
 
 FaBo9Axis fabo_9axis(0x68);
 
@@ -153,9 +156,9 @@ long end_loop_time;
 long last_mpu_read_time;
 long next_mpu_read_time;
 long next_air_velocity_calculation_time;
-long last_power_calculation_time;
-long last_lcd_write_time;
-long last_serial_write_time;
+long next_power_calculation_time;
+long next_lcd_write_time;
+long next_serial_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
@@ -170,7 +173,7 @@ rotation_calculator cadence_rotation_calculator(2, 10);
 average_calculator air_velocity_calculator(10, 2, 10);
 
 #ifdef DEBUG
-average_calculator loop_time_calculator(10, 2, 10);
+average_calculator loop_time_calculator(1, 2, 10);
 #endif
 
 
@@ -221,13 +224,14 @@ void setup() {
     lcd.begin(16, 2);
 #endif
 
-    filter.begin(50);
-    micros_per_mpu_reading = MICROSECONDS_IN_SECONDS / 50;
+    filter.begin(mpu_sample_frequency);
     last_mpu_read_time = start_time;
     next_mpu_read_time = start_time + micros_per_mpu_reading;
     
 #ifdef DEBUG
-    Serial.println("micros_per_mpu_reading " + String(micros_per_mpu_reading));
+    Serial.println("micros_per_mpu_reading = " + String(micros_per_mpu_reading));
+    Serial.println("micros_per_air_velocity_calculation = " + String(micros_per_air_velocity_calculation));
+    Serial.println("micros_per_power_calculation = " + String(micros_per_power_calculation));
 #endif
 
     for (int i = 0; i < 5; i++)
@@ -266,7 +270,7 @@ void setup() {
     int imu_update_count = 0;
     int slope_degrees_correction_count = 0;
 
-    while (slope_degrees_correction_count <= 1000) {
+    while (slope_degrees_correction_count <= 100) {
         start_loop_time = micros();
 
         if (start_loop_time >= next_mpu_read_time) {
@@ -282,25 +286,25 @@ void setup() {
             if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
                 slope_degrees_correction_count++;
 
-                if (slope_degrees_correction_count == 500) {
+                if (slope_degrees_correction_count == 50) {
                     slope_degrees_correction = slope_degrees_calculator.average;
                     slope_degrees_calculator.reset();
                     imu_update_count = 0;
 
 #ifdef DEBUG
-    Serial.println("Rotate bike 180 degrees");
+                    Serial.println("Rotate bike 180 degrees");
 #endif
                     lcd.print("Rotate bike");
                     delay(15000);
                     lcd.clear();
-                } else if (slope_degrees_correction_count == 1000) {
+                } else if (slope_degrees_correction_count == 100) {
                     slope_degrees_correction += slope_degrees_calculator.average;
                     slope_degrees_correction /= -2;
                     slope_degrees_calculator.reset();
                     imu_update_count = 0;
 
 #ifdef DEBUG
-                    Serial.println("slope_degrees_correction " + String(slope_degrees_correction, 2));
+                    Serial.println("slope_degrees_correction = " + String(slope_degrees_correction, 2));
 #endif
                     lcd.print("s_d_c: " + String(slope_degrees_correction, 2));
                     delay(5000);
@@ -325,6 +329,9 @@ void setup() {
     long end_time = micros();
     next_mpu_read_time = end_time;
     next_air_velocity_calculation_time = end_time;
+    next_power_calculation_time = end_time + micros_per_power_calculation;
+    next_lcd_write_time = end_time + micros_per_lcd_write;
+    next_serial_write_time = end_time + micros_per_serial_write;
 }
 
 
@@ -343,12 +350,6 @@ void loop() {
             vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
         }
 
-        // slope_degrees = (atan2((mpu_ax) , sqrt(mpu_ay * mpu_ay + mpu_az * mpu_az)) * 57.3) + slope_degrees_correction;
-        // if (slope_degrees > 30) {
-        //     slope_degrees = 30;
-        // } else if (slope_degrees < -30) {
-        //     slope_degrees = -30;
-        // }
 #ifdef DEBUG
         measured_micros_per_mpu_reading = start_loop_time - last_mpu_read_time;
         last_mpu_read_time = start_loop_time;
@@ -366,7 +367,7 @@ void loop() {
     //     cadence = calculate_cadence(cadence_rotation_calculator.rotations_per_second);
     // }
 
-    if (start_loop_time > next_air_velocity_calculation_time) {
+    if (start_loop_time >= next_air_velocity_calculation_time) {
         static_pressure = static_sensor.readPressure();
         stagnation_pressure = stagnation_sensor.readPressure();
         air_temperature = static_sensor.readTemperature();
@@ -379,9 +380,7 @@ void loop() {
         next_air_velocity_calculation_time += micros_per_air_velocity_calculation;
     }
 
-    if (start_loop_time - last_power_calculation_time > 1 * 1000000) {
-        last_power_calculation_time = start_loop_time;
-
+    if (start_loop_time >= next_power_calculation_time) {
         wind_velocity = air_velocity - ground_velocity;
 
         gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
@@ -398,6 +397,8 @@ void loop() {
         if (total_power < 0) {
             total_power = 0;
         }
+
+        next_power_calculation_time += micros_per_power_calculation;
     }
 
 #ifdef DEBUG
@@ -406,9 +407,7 @@ void loop() {
 #endif
 
 #ifdef LCD
-    if (start_loop_time - last_lcd_write_time > 5 * 1000000) {
-        last_lcd_write_time = start_loop_time;
-
+    if (start_loop_time >= next_lcd_write_time) {
         lcd.setCursor(2, 0);
         dtostrf(ground_velocity * 3.6, 5, 1, ground_velocity_display);
         lcd.print(ground_velocity_display);
@@ -424,13 +423,13 @@ void loop() {
         lcd.setCursor(10, 1);
         dtostrf(total_power, 5, 1, total_power_display);
         lcd.print(total_power_display);
+
+        next_lcd_write_time += micros_per_power_calculation;
     }
 #endif
 
 #ifdef DEBUG
-    if (start_loop_time - last_serial_write_time > 5 * 1000000) {
-        last_serial_write_time = start_loop_time;
-
+    if (start_loop_time >= next_serial_write_time) {
         Serial.print("loop_time: ");
         Serial.println(loop_time_calculator.average);
 
@@ -468,6 +467,8 @@ void loop() {
         Serial.println(measured_micros_per_mpu_reading);
 
         Serial.println();
+
+        next_serial_write_time += micros_per_serial_write;
     }
 #endif
 }
