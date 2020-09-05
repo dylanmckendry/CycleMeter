@@ -158,19 +158,20 @@ int crank_sensor_value;
 int wheel_sensor_value;
 
 Madgwick filter;
-average_calculator slope_degrees_calculator(2, 50);
+average_calculator slope_degrees_calculator(2, 25);
 rotation_calculator wheel_rotation_calculator(2, 10);
 rotation_calculator cadence_rotation_calculator(2, 10);
 average_calculator air_velocity_calculator(2, 10);
 
 #define LCD true;
-#define DEBUG true;
+//#define DEBUG true;
 
 void setup() {
     long start_time = micros();
 
 #ifdef DEBUG
     Serial.begin(9600);
+    Serial.println("Welcome!");
 #endif
 
     if (!fabo_9axis.begin()) {
@@ -246,6 +247,10 @@ void setup() {
     delay(5000);
     lcd.clear();
 
+#ifdef DEBUG
+    Serial.println("Place bike flat");
+#endif
+
     lcd.print("Place bike flat");
     delay(10000);
     lcd.clear();
@@ -274,6 +279,9 @@ void setup() {
                     slope_degrees_calculator.reset();
                     imu_update_count = 0;
 
+#ifdef DEBUG
+    Serial.println("Rotate bike 180 degrees");
+#endif
                     lcd.print("Rotate bike");
                     delay(15000);
                     lcd.clear();

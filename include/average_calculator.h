@@ -1,7 +1,7 @@
 #ifndef CYCLEMETER_AVERAGE_CALCULATOR_H
 #define CYCLEMETER_AVERAGE_CALCULATOR_H
 
-const int MAX_READINGS = 50;
+const int MAX_READINGS = 25;
 
 class average_calculator {
 
