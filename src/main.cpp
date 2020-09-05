@@ -125,6 +125,8 @@ float calculate_tire_resistance_power(float total_weight, float slope_ratio, flo
 }
 
 long micros_per_mpu_reading;
+long measured_micros_per_mpu_reading;
+
 
 FaBo9Axis fabo_9axis(0x68);
 
@@ -141,8 +143,10 @@ char ground_velocity_display[5] = "";
 char air_velocity_display[5] = "";
 char total_power_display[5] = "";
 
-long loop_time;
+long start_loop_time;
+long end_loop_time;
 long last_mpu_read_time;
+long next_mpu_read_time;
 long last_power_calculation_time;
 long last_lcd_write_time;
 long last_serial_write_time;
@@ -154,24 +158,25 @@ int crank_sensor_value;
 int wheel_sensor_value;
 
 Madgwick filter;
-average_calculator slope_degrees_calculator(2, 3);
-rotation_calculator wheel_rotation_calculator(2, 3);
-rotation_calculator cadence_rotation_calculator(2, 3);
-average_calculator air_velocity_calculator(2, 3);
+average_calculator slope_degrees_calculator(2, 50);
+rotation_calculator wheel_rotation_calculator(2, 10);
+rotation_calculator cadence_rotation_calculator(2, 10);
+average_calculator air_velocity_calculator(2, 10);
 
-bool serial = true;
+#define LCD true;
+#define DEBUG true;
 
 void setup() {
     long start_time = micros();
 
-    if (serial) {
-        Serial.begin(9600);
-    }
+#ifdef DEBUG
+    Serial.begin(9600);
+#endif
 
     if (!fabo_9axis.begin()) {
-        if (serial) {
-            Serial.println("Could not find the MPU at address 0x68");
-        }
+#ifdef DEBUG
+        Serial.println("Could not find the MPU at address 0x68");
+#endif
         while(1);
     }
 
@@ -179,16 +184,16 @@ void setup() {
     pinMode(wheel_sensor_pin, INPUT);
 
     if (!static_sensor.begin(0x77)) {
-        if (serial) {
-            Serial.println("Could not find the static sensor at address 0x77");
-        }
+#ifdef DEBUG
+        Serial.println("Could not find the static sensor at address 0x77");
+#endif
         while (1);
     }
 
     if (!stagnation_sensor.begin(0x76)) {
-        if (serial) {
+#ifdef DEBUG
             Serial.println("Could not find the static sensor at address 0x76");
-        }
+#endif
         while (1);
     }
 
@@ -203,12 +208,18 @@ void setup() {
                     Adafruit_BMP280::SAMPLING_X16,
                     Adafruit_BMP280::FILTER_X2,
                     Adafruit_BMP280::STANDBY_MS_1);
-
+#ifdef LCD
     lcd.begin(16, 2);
+#endif
 
-    filter.begin(25);
-    // micros_per_mpu_reading = 1000000 / 25;
-    // last_mpu_read_time = start_time;
+    filter.begin(50);
+    micros_per_mpu_reading = 1000000 / 50;
+    last_mpu_read_time = start_time;
+    next_mpu_read_time = start_time + micros_per_mpu_reading;
+
+#ifdef DEBUG
+    Serial.println("micros_per_mpu_reading " + String(micros_per_mpu_reading));
+#endif
 
     for (int i = 0; i < 5; i++)
     {
@@ -226,14 +237,65 @@ void setup() {
 
     sensor_pressure_correction /= -sensor_pressure_correction_count;
 
-    if (serial) {
-        Serial.print("Barometer sensor correction is ");
-        Serial.println(sensor_pressure_correction);
-    }
+#ifdef DEBUG
+    Serial.println("sensor_pressure_correction " + String(sensor_pressure_correction, 2));
+#endif
 
+#ifdef LCD
     lcd.print("s_p_c: " + String(sensor_pressure_correction, 2));
     delay(5000);
     lcd.clear();
+
+    lcd.print("Place bike flat");
+    delay(10000);
+    lcd.clear();
+
+    int imu_update_count = 0;
+    int slope_degrees_correction_count = 0;
+
+    while (slope_degrees_correction_count <= 1000) {
+        start_loop_time = micros();
+
+        if (start_loop_time >= next_mpu_read_time) {
+            fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
+            fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
+            
+            filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
+            imu_update_count++;
+            if (imu_update_count < 100) {
+                continue;
+            }
+
+            if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
+                slope_degrees_correction_count++;
+
+                if (slope_degrees_correction_count == 500) {
+                    slope_degrees_correction = slope_degrees_calculator.average;
+                    slope_degrees_calculator.reset();
+                    imu_update_count = 0;
+
+                    lcd.print("Rotate bike");
+                    delay(15000);
+                    lcd.clear();
+                } else if (slope_degrees_correction_count == 1000) {
+                    slope_degrees_correction += slope_degrees_calculator.average;
+                    slope_degrees_correction /= -2;
+                    slope_degrees_calculator.reset();
+                    imu_update_count = 0;
+
+#ifdef DEBUG
+                    Serial.println("slope_degrees_correction " + String(slope_degrees_correction, 2));
+#endif
+                    lcd.print("s_d_c: " + String(slope_degrees_correction, 2));
+                    delay(5000);
+                    lcd.clear();
+                }
+            }
+
+            next_mpu_read_time = start_loop_time + micros_per_mpu_reading;
+        }
+    }
+
 
     lcd.print("S:");
     lcd.setCursor(8, 0);
@@ -242,19 +304,20 @@ void setup() {
     lcd.print("W:");
     lcd.setCursor(8, 1);
     lcd.print("P:");
+#endif
 }
 
 
 void loop() {
-    loop_time = micros();
+    start_loop_time = micros();
 
-    if (fabo_9axis.checkDataReady()) {
+    if (start_loop_time >= next_mpu_read_time) {
         fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
         fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
         
         filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
 
-        if (slope_degrees_calculator.on_reading(-filter.getPitch(), loop_time)) {
+        if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
             slope_degrees = slope_degrees_calculator.average + slope_degrees_correction;
             slope_ratio = calculate_slope_ratio(slope_degrees);
             vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
@@ -266,17 +329,20 @@ void loop() {
         // } else if (slope_degrees < -30) {
         //     slope_degrees = -30;
         // }
-       
-        // last_mpu_read_time += micros_per_mpu_reading;
+#ifdef DEBUG
+        measured_micros_per_mpu_reading = start_loop_time - last_mpu_read_time;
+        last_mpu_read_time = start_loop_time;
+#endif
+        next_mpu_read_time = start_loop_time + micros_per_mpu_reading;
     }
 
     wheel_sensor_value = digitalRead(wheel_sensor_pin);
-    if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, loop_time)) {
+    if (wheel_rotation_calculator.on_reading(wheel_sensor_value == LOW, start_loop_time)) {
         ground_velocity = calculate_ground_velocity(wheel_rotation_calculator.rotations_per_second, wheel_radius);
     }
 
     // crank_sensor_value = digitalRead(crank_sensor_pin);
-    // if (cadence_rotation_calculator.on_reading(crank_sensor_value == LOW, loop_time)) {
+    // if (cadence_rotation_calculator.on_reading(crank_sensor_value == LOW, start_loop_time)) {
     //     cadence = calculate_cadence(cadence_rotation_calculator.rotations_per_second);
     // }
 
@@ -285,14 +351,14 @@ void loop() {
     air_temperature = static_sensor.readTemperature();
     dynamic_pressure = calculate_dynamic_pressure(stagnation_pressure, static_pressure, sensor_pressure_correction);
     air_density = calculate_air_density(static_pressure, air_temperature);
-    if (air_velocity_calculator.on_reading(calculate_air_velocity(dynamic_pressure, air_density), loop_time)) {
+    if (air_velocity_calculator.on_reading(calculate_air_velocity(dynamic_pressure, air_density), start_loop_time)) {
         air_velocity = air_velocity_calculator.average;
     }
 
     wind_velocity = air_velocity - ground_velocity;
 
-    if (loop_time - last_power_calculation_time > 1 * 1000000) {
-        last_power_calculation_time = loop_time;
+    if (start_loop_time - last_power_calculation_time > 1 * 1000000) {
+        last_power_calculation_time = start_loop_time;
 
         gravity_power = calculate_gravity_power(total_weight, vertical_velocity);
 
@@ -310,8 +376,13 @@ void loop() {
         }
     }
 
-    if (loop_time - last_lcd_write_time > 2 * 1000000) {
-        last_lcd_write_time = loop_time;
+#ifdef DEBUG
+    end_loop_time = micros();
+#endif
+
+#ifdef LCD
+    if (start_loop_time - last_lcd_write_time > 5 * 1000000) {
+        last_lcd_write_time = start_loop_time;
 
         lcd.setCursor(2, 0);
         dtostrf(ground_velocity * 3.6, 5, 1, ground_velocity_display);
@@ -328,41 +399,50 @@ void loop() {
         lcd.setCursor(10, 1);
         dtostrf(total_power, 5, 1, total_power_display);
         lcd.print(total_power_display);
-
-        if (serial && loop_time - last_serial_write_time > 5 * 1000000) {
-            last_serial_write_time = loop_time;
-
-            Serial.print("slope_degrees: ");
-            Serial.println(slope_degrees);
-
-            Serial.print("ground_velocity: ");
-            Serial.println(ground_velocity);
-
-            Serial.print("air_velocity: ");
-            Serial.println(air_velocity);
-
-            Serial.print("wind_velocity: ");
-            Serial.println(wind_velocity);
-
-            Serial.print("vertical_velocity: ");
-            Serial.println(vertical_velocity);
-
-            Serial.print("gravity_power: ");
-            Serial.println(gravity_power);
-
-            Serial.print("inertia_power: ");
-            Serial.println(inertia_power);
-
-            Serial.print("air_drag_power: ");
-            Serial.println(air_drag_power);
-
-            Serial.print("tire_resistance_power: ");
-            Serial.println(tire_resistance_power);
-
-            Serial.print("total_power: ");
-            Serial.println(total_power);
-
-            Serial.println();
-        }
     }
+#endif
+
+#ifdef DEBUG
+    if (start_loop_time - last_serial_write_time > 5 * 1000000) {
+        last_serial_write_time = start_loop_time;
+
+        Serial.print("loop_time: ");
+        Serial.println(end_loop_time - start_loop_time);
+
+        Serial.print("slope_degrees: ");
+        Serial.println(slope_degrees);
+
+        Serial.print("ground_velocity: ");
+        Serial.println(ground_velocity);
+
+        Serial.print("air_velocity: ");
+        Serial.println(air_velocity);
+
+        Serial.print("wind_velocity: ");
+        Serial.println(wind_velocity);
+
+        Serial.print("vertical_velocity: ");
+        Serial.println(vertical_velocity);
+
+        Serial.print("gravity_power: ");
+        Serial.println(gravity_power);
+
+        Serial.print("inertia_power: ");
+        Serial.println(inertia_power);
+
+        Serial.print("air_drag_power: ");
+        Serial.println(air_drag_power);
+
+        Serial.print("tire_resistance_power: ");
+        Serial.println(tire_resistance_power);
+
+        Serial.print("total_power: ");
+        Serial.println(total_power);
+
+        Serial.print("measured_micros_per_mpu_reading: ");
+        Serial.println(measured_micros_per_mpu_reading);
+
+        Serial.println();
+    }
+#endif
 }
