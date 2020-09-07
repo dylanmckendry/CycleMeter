@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
@@ -9,7 +10,16 @@
 #include "rotation_calculator.h"
 
 #define LCD true;
-#define DEBUG true;
+//#define DEBUG true;
+
+// TODO: FSYNC to ground
+// TODO: what is foward x or y
+// TODO: calibration on start up
+// TODO: add magnet
+// TODO: calibration is off because
+// TODO: baramter as well
+// TODO: need to look at the location
+// TODO: need to check how quick without reading pins
 
 // need to look at humidity with BME280 for better air pressure
 // wind angle use mics
@@ -46,6 +56,7 @@ float air_temperature;
 
 float slope_degrees; // also get from altitude
 float slope_degrees_correction;
+// TODO: need to add this
 float acceleration = 0; // also get from changes in speed? what if this is -ve?
 
 float wheel_rotations_second;
@@ -131,7 +142,7 @@ int mpu_sample_frequency = 50;
 long micros_per_mpu_reading = MICROSECONDS_IN_SECONDS / mpu_sample_frequency;
 long micros_per_air_velocity_calculation = MICROSECONDS_IN_SECONDS / 10;
 long micros_per_power_calculation = MICROSECONDS_IN_SECONDS / 10;
-long micros_per_lcd_write = MICROSECONDS_IN_SECONDS * 5;
+long micros_per_lcd_write = MICROSECONDS_IN_SECONDS * 10;
 long micros_per_serial_write = MICROSECONDS_IN_SECONDS * 10;
 
 long measured_micros_per_mpu_reading;
@@ -162,6 +173,7 @@ long next_serial_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
+float mpu_mx, mpu_my, mpu_mz;
 
 int crank_sensor_value;
 int wheel_sensor_value;
@@ -183,6 +195,7 @@ void setup() {
 #ifdef DEBUG
     Serial.begin(9600);
     Serial.println("Welcome!");
+    // Serial.println(LONG_MAX);
 #endif
 
     if (!fabo_9axis.begin()) {
@@ -341,14 +354,23 @@ void loop() {
     if (start_loop_time >= next_mpu_read_time) {
         fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
         fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
-        
-        filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
+        // fabo_9axis.readMagnetXYZ(&mpu_mx,&mpu_my,&mpu_mz);
 
-        if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
-            slope_degrees = slope_degrees_calculator.average + slope_degrees_correction;
-            slope_ratio = calculate_slope_ratio(slope_degrees);
-            vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
+        if (mpu_ax + mpu_ay + mpu_az < 1.2) {
+            filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
+            // filter.update(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az, mpu_mx, mpu_my, mpu_mz);
+
+            if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
+                slope_degrees = slope_degrees_calculator.average + slope_degrees_correction;
+                slope_ratio = calculate_slope_ratio(slope_degrees);
+                vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
+            }
+        } else {
+// #ifdef DEBUG
+//             Serial.println("Ignoring " + String(mpu_ax, 2) + ", " + String(mpu_ay, 2) + ", " + String(mpu_az, 2));
+// #endif           
         }
+
 
 #ifdef DEBUG
         measured_micros_per_mpu_reading = start_loop_time - last_mpu_read_time;
@@ -430,6 +452,12 @@ void loop() {
 
 #ifdef DEBUG
     if (start_loop_time >= next_serial_write_time) {
+        Serial.print("start_loop_time: ");
+        Serial.println(start_loop_time);
+
+        Serial.print("next_mpu_read_time: ");
+        Serial.println(next_mpu_read_time);
+
         Serial.print("loop_time: ");
         Serial.println(loop_time_calculator.average);
 
