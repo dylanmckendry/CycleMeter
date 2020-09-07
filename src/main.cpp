@@ -142,7 +142,7 @@ int mpu_sample_frequency = 50;
 long micros_per_mpu_reading = MICROSECONDS_IN_SECONDS / mpu_sample_frequency;
 long micros_per_air_velocity_calculation = MICROSECONDS_IN_SECONDS / 10;
 long micros_per_power_calculation = MICROSECONDS_IN_SECONDS / 10;
-long micros_per_lcd_write = MICROSECONDS_IN_SECONDS * 10;
+long micros_per_lcd_write = MICROSECONDS_IN_SECONDS * 5;
 long micros_per_serial_write = MICROSECONDS_IN_SECONDS * 10;
 
 long measured_micros_per_mpu_reading;
@@ -446,7 +446,7 @@ void loop() {
         dtostrf(total_power, 5, 1, total_power_display);
         lcd.print(total_power_display);
 
-        next_lcd_write_time += micros_per_power_calculation;
+        next_lcd_write_time += micros_per_lcd_write;
     }
 #endif
 
