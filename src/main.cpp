@@ -9,8 +9,8 @@
 #include "average_calculator.h"
 #include "rotation_calculator.h"
 
-#define LCD true;
-//#define DEBUG true;
+//#define LCD true;
+#define DEBUG true;
 
 // TODO: FSYNC to ground
 // TODO: what is foward x or y
@@ -173,7 +173,6 @@ long next_serial_write_time;
 
 float mpu_ax, mpu_ay, mpu_az;
 float mpu_gx, mpu_gy, mpu_gz;
-float mpu_mx, mpu_my, mpu_mz;
 
 int crank_sensor_value;
 int wheel_sensor_value;
@@ -283,7 +282,7 @@ void setup() {
     int imu_update_count = 0;
     int slope_degrees_correction_count = 0;
 
-    while (slope_degrees_correction_count <= 100) {
+    while (slope_degrees_correction_count <= 50) {
         start_loop_time = micros();
 
         if (start_loop_time >= next_mpu_read_time) {
@@ -299,7 +298,7 @@ void setup() {
             if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
                 slope_degrees_correction_count++;
 
-                if (slope_degrees_correction_count == 50) {
+                if (slope_degrees_correction_count == 25) {
                     slope_degrees_correction = slope_degrees_calculator.average;
                     slope_degrees_calculator.reset();
                     imu_update_count = 0;
@@ -310,7 +309,7 @@ void setup() {
                     lcd.print("Rotate bike");
                     delay(15000);
                     lcd.clear();
-                } else if (slope_degrees_correction_count == 100) {
+                } else if (slope_degrees_correction_count == 50) {
                     slope_degrees_correction += slope_degrees_calculator.average;
                     slope_degrees_correction /= -2;
                     slope_degrees_calculator.reset();
@@ -354,21 +353,20 @@ void loop() {
     if (start_loop_time >= next_mpu_read_time) {
         fabo_9axis.readAccelXYZ(&mpu_ax,&mpu_ay,&mpu_az);
         fabo_9axis.readGyroXYZ(&mpu_gx,&mpu_gy,&mpu_gz);
-        // fabo_9axis.readMagnetXYZ(&mpu_mx,&mpu_my,&mpu_mz);
-
-        if (mpu_ax + mpu_ay + mpu_az < 1.2) {
+        
+        if (mpu_az > 0 && mpu_ax + mpu_ay + mpu_az < 1.5 && mpu_az < 1.1) {
             filter.updateIMU(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az);
-            // filter.update(mpu_gx, mpu_gy, mpu_gz, mpu_ax, mpu_ay, mpu_az, mpu_mx, mpu_my, mpu_mz);
 
             if (slope_degrees_calculator.on_reading(-filter.getPitch(), start_loop_time)) {
                 slope_degrees = slope_degrees_calculator.average + slope_degrees_correction;
+                Serial.println(slope_degrees);
                 slope_ratio = calculate_slope_ratio(slope_degrees);
                 vertical_velocity = calculate_vertical_velocity(slope_degrees, ground_velocity);
             }
         } else {
-// #ifdef DEBUG
-//             Serial.println("Ignoring " + String(mpu_ax, 2) + ", " + String(mpu_ay, 2) + ", " + String(mpu_az, 2));
-// #endif           
+#ifdef DEBUG
+            Serial.println("Ignoring MPU reading " + String(mpu_ax, 2) + ", " + String(mpu_ay, 2) + ", " + String(mpu_az, 2));
+#endif
         }
 
 
@@ -460,6 +458,12 @@ void loop() {
 
         Serial.print("loop_time: ");
         Serial.println(loop_time_calculator.average);
+
+        Serial.print("mpu_a*: ");
+        Serial.println(String(mpu_ax, 2) + ", " + String(mpu_ay, 2) + ", " + String(mpu_az, 2));
+
+        Serial.print("mpu_g*: ");
+        Serial.println(String(mpu_gx, 2) + ", " + String(mpu_gy, 2) + ", " + String(mpu_gz, 2));
 
         Serial.print("slope_degrees: ");
         Serial.println(slope_degrees);
