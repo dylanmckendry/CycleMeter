@@ -19,6 +19,15 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#define WHEEL_SENSOR_PIN 20
+#define CRANK_SENSOR_PIN 21
+
+void wheel_sensor_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    if (action == NRF_GPIOTE_POLARITY_TOGGLE && pin == WHEEL_SENSOR_PIN)
+    {
+    }
+}
 
 static void log_init(void)
 {
@@ -37,6 +46,11 @@ static void gpio_init()
         err_code = nrf_drv_gpiote_init();
         APP_ERROR_CHECK(err_code);
     }
+
+    nrf_drv_gpiote_in_config_t config = GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
+    config.pull = NRF_GPIO_PIN_PULLUP;
+    nrf_drv_gpiote_in_init(WHEEL_SENSOR_PIN, &config, wheel_sensor_event_handler);
+    nrf_drv_gpiote_in_event_enable(WHEEL_SENSOR_PIN, true);
 }
 
 /**@brief Function for application main entry, does not return.
@@ -47,7 +61,5 @@ int main(void)
     gpio_init();
 
     
-
-    
-
+    for(;;) __WFE();
 }
