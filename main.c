@@ -24,9 +24,11 @@
 
 void wheel_sensor_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    if (action == NRF_GPIOTE_POLARITY_TOGGLE && pin == WHEEL_SENSOR_PIN)
+    if (action == NRF_GPIOTE_POLARITY_LOTOHI && pin == WHEEL_SENSOR_PIN)
     {
-    }
+        char string_on_stack[] = "stack";
+        NRF_LOG_INFO("%s",string_on_stack);
+    }    
 }
 
 static void log_init(void)
@@ -35,6 +37,15 @@ static void log_init(void)
     APP_ERROR_CHECK(err_code);
 
     NRF_LOG_DEFAULT_BACKENDS_INIT();
+}
+
+static void utils_setup(void)
+{
+    ret_code_t err_code = app_timer_init();
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_pwr_mgmt_init();
+    APP_ERROR_CHECK(err_code);
 }
 
 static void gpio_init()
@@ -47,8 +58,8 @@ static void gpio_init()
         APP_ERROR_CHECK(err_code);
     }
 
-    nrf_drv_gpiote_in_config_t config = GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
-    config.pull = NRF_GPIO_PIN_PULLUP;
+    nrf_drv_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_LOTOHI(true);
+    //config.pull = NRF_GPIO_PIN_PULLUP;
     nrf_drv_gpiote_in_init(WHEEL_SENSOR_PIN, &config, wheel_sensor_event_handler);
     nrf_drv_gpiote_in_event_enable(WHEEL_SENSOR_PIN, true);
 }
@@ -60,6 +71,10 @@ int main(void)
     log_init();
     gpio_init();
 
-    
-    for(;;) __WFE();
+    while (true)
+    {
+        // Do Nothing - GPIO can be toggled without software intervention.
+    }
+
+    //for(;;) __WFE();
 }
