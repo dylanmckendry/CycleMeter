@@ -8,6 +8,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "drivers/mpu9250/mpu9250.h"
 
 #define ARDUINO_SCL_PIN             20    // SCL signal pin
 #define ARDUINO_SDA_PIN             21    // SDA signal pin
@@ -19,14 +20,11 @@
 #define TWI_INSTANCE_ID     1
 #endif
 
-/* Number of possible TWI addresses. */
-#define TWI_ADDRESSES      127
-
-
 
 /* TWI instance. */
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 
+static uint8_t m_sample;
 
 /**
  * @brief TWI initialization.
@@ -49,6 +47,9 @@ void twi_init (void)
     nrf_drv_twi_enable(&m_twi);
 }
 
+#define MPU9250_ADDR 0x68
+#define MPU9250_RA_PWR_MGMT_1 0x6B
+#define MPU9250_PWR1_DEVICE_RESET_BIT 7
 
 /**
  * @brief Function for main application entry.
@@ -63,26 +64,18 @@ int main(void)
     APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 
-    NRF_LOG_INFO("TWI scanner started.");
+    NRF_LOG_INFO("MPU9250 started.");
     NRF_LOG_FLUSH();
     twi_init();
 
-    for (address = 1; address <= TWI_ADDRESSES; address++)
-    {
-        err_code = nrf_drv_twi_rx(&m_twi, address, &sample_data, sizeof(sample_data));
-        if (err_code == NRF_SUCCESS)
-        {
-            detected_device = true;
-            NRF_LOG_INFO("TWI device detected at address 0x%x.", address);
-            NRF_LOG_FLUSH();
-        }
-    }
+    uint8_t reg[2] = {MPU9250_RA_PWR_MGMT_1, MPU9250_PWR1_DEVICE_RESET_BIT};
+    err_code = nrf_drv_twi_tx(&m_twi, MPU9250_ADDR, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
 
-    if (!detected_device)
-    {
-        NRF_LOG_INFO("No device was found.");
-        NRF_LOG_FLUSH();
-    }
+    //err_code = nrf_drv_twi_rx(&m_twi, MPU9250_ADDR, &m_sample, sizeof(m_sample));
+    //APP_ERROR_CHECK(err_code);
+
+    //NRF_LOG_INFO(m_sample);
 
     while (true)
     {
