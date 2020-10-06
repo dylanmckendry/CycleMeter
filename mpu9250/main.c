@@ -58,35 +58,23 @@ void twi_init (void)
  */
 int main(void)
 {
-    ret_code_t err_code;
-    uint8_t address;
-    uint8_t sample_data;
-    bool detected_device = false;
-
     APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 
     NRF_LOG_INFO("MPU9250 started.");
     NRF_LOG_FLUSH();
+
+    mpu9250 mpu9250;
+    mpu9250.address = MPU9250_ADDR;
+
+    int16_t temperature;
+
     twi_init();
 
-    write_register(&m_twi, MPU9250_ADDR, PWR_MGMNT_1, CLOCK_SEL_PLL);
-    //write(PWR_MGMNT_1, PWR_RESET);
+    mpu9250_init(&m_twi, &mpu9250);
+    temperature = mpu9250_read_temperature(&m_twi, &mpu9250);
 
-    //err_code = nrf_drv_twi_rx(&m_twi, MPU9250_ADDR, &m_sample, sizeof(m_sample));
-    //APP_ERROR_CHECK(err_code);
-
-    //NRF_LOG_INFO(m_sample);
-
+    NRF_LOG_INFO("MPU9250 temperature %d.", temperature);
     NRF_LOG_INFO("MPU9250 ended.");
     NRF_LOG_FLUSH();
-
-    nrf_delay_ms(500);
-
-    //read();
-
-    //while (true)
-    //{
-    //    /* Empty loop. */
-    //}
 }

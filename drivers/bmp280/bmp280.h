@@ -1,6 +1,10 @@
 #ifndef BMP280_H
 #define BMP280_H
 
+#include "app_error.h"
+#include "nrf_drv_twi.h"
+#include "nrf_delay.h"
+
 #include "drivers/common/twi_common.h"
 
 // BMP280 registers

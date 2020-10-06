@@ -62,9 +62,10 @@ int main(void)
     NRF_LOG_FLUSH();
 
     bmp280 bmp280_1;
-    int32_t temperature = 1;
-    int32_t pressure = 2;
     bmp280_1.address = BMP280_ADDR;
+
+    int32_t temperature;
+    int32_t pressure;
 
     twi_init();
     bmp280_init(&m_twi, &bmp280_1);
@@ -75,13 +76,4 @@ int main(void)
     NRF_LOG_INFO("BMP280 pressure %d.", pressure);
     NRF_LOG_INFO("BMP280 ended.");
     NRF_LOG_FLUSH();
-
-    nrf_delay_ms(500);
-
-    //read();
-
-    //while (true)
-    //{
-    //    /* Empty loop. */
-    //}
 }
