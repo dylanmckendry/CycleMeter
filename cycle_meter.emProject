@@ -365,6 +365,8 @@
     <folder Name="Application">
       <file file_name="bmp280/main.c" />
       <file file_name="sdk_config.h" />
+      <file file_name="drivers/bmp280/bmp280.h" />
+      <file file_name="drivers/common/twi_common.h" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(nRF5SDK17Dir)/external/segger_rtt/SEGGER_RTT.c" />
@@ -490,11 +492,6 @@
     <folder Name="Board Support">
       <file file_name="$(nRF5SDK17Dir)/components/libraries/bsp/bsp.c" />
     </folder>
-    <folder Name="Application">
-      <file file_name="mpu9250/main.c" />
-      <file file_name="sdk_config.h" />
-      <file file_name="drivers/mpu9250/mpu9250.h" />
-    </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(nRF5SDK17Dir)/external/segger_rtt/SEGGER_RTT.c" />
       <file file_name="$(nRF5SDK17Dir)/external/segger_rtt/SEGGER_RTT_Syscalls_SES.c" />
@@ -508,6 +505,12 @@
     <folder Name="nRF_SoftDevice">
       <file file_name="$(nRF5SDK17Dir)/components/softdevice/common/nrf_sdh.c" />
       <file file_name="$(nRF5SDK17Dir)/components/softdevice/common/nrf_sdh_ant.c" />
+    </folder>
+    <folder Name="Application">
+      <file file_name="mpu9250/main.c" />
+      <file file_name="sdk_config.h" />
+      <file file_name="drivers/mpu9250/mpu9250.h" />
+      <file file_name="drivers/common/twi_common.h" />
     </folder>
   </project>
   <configuration

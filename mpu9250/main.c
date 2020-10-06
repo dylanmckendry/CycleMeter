@@ -3,12 +3,14 @@
 #include "app_util_platform.h"
 #include "app_error.h"
 #include "nrf_drv_twi.h"
+#include "nrf_delay.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
 #include "drivers/mpu9250/mpu9250.h"
+#include "drivers/common/twi_common.h"
 
 #define ARDUINO_SCL_PIN             20    // SCL signal pin
 #define ARDUINO_SDA_PIN             21    // SDA signal pin
@@ -48,8 +50,8 @@ void twi_init (void)
 }
 
 #define MPU9250_ADDR 0x68
-#define MPU9250_RA_PWR_MGMT_1 0x6B
-#define MPU9250_PWR1_DEVICE_RESET_BIT 7
+
+
 
 /**
  * @brief Function for main application entry.
@@ -68,17 +70,23 @@ int main(void)
     NRF_LOG_FLUSH();
     twi_init();
 
-    uint8_t reg[2] = {MPU9250_RA_PWR_MGMT_1, MPU9250_PWR1_DEVICE_RESET_BIT};
-    err_code = nrf_drv_twi_tx(&m_twi, MPU9250_ADDR, reg, sizeof(reg), false);
-    APP_ERROR_CHECK(err_code);
+    write_register(&m_twi, MPU9250_ADDR, PWR_MGMNT_1, CLOCK_SEL_PLL);
+    //write(PWR_MGMNT_1, PWR_RESET);
 
     //err_code = nrf_drv_twi_rx(&m_twi, MPU9250_ADDR, &m_sample, sizeof(m_sample));
     //APP_ERROR_CHECK(err_code);
 
     //NRF_LOG_INFO(m_sample);
 
-    while (true)
-    {
-        /* Empty loop. */
-    }
+    NRF_LOG_INFO("MPU9250 ended.");
+    NRF_LOG_FLUSH();
+
+    nrf_delay_ms(500);
+
+    //read();
+
+    //while (true)
+    //{
+    //    /* Empty loop. */
+    //}
 }
