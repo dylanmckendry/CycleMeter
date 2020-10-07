@@ -43,6 +43,7 @@ const uint8_t MPU9250_INT_DISABLE = 0x00;
 const uint8_t MPU9250_INT_PULSE_50US = 0x00;
 const uint8_t MPU9250_INT_WOM_EN = 0x40;
 const uint8_t MPU9250_INT_RAW_RDY_EN = 0x01;
+const uint8_t MPU9250_INT_STATUS = 0x3A;
 const uint8_t MPU9250_PWR_MGMNT_1 = 0x6B;
 const uint8_t MPU9250_PWR_CYCLE = 0x20;
 const uint8_t MPU9250_PWR_RESET = 0x80;
@@ -166,9 +167,15 @@ void mpu9250_init(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
     // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
     // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips 
     // can join the I2C bus and all can be controlled by the Arduino as master
-    write_register(twi_driver, mpu9250->address, MPU9250_INT_PIN_CFG, 0x22);    
+    write_register(twi_driver, mpu9250->address, MPU9250_INT_PIN_CFG, 0x02);    
     write_register(twi_driver, mpu9250->address, MPU9250_INT_ENABLE, 0x01);  // Enable data ready (bit 0) interrupt
     nrf_delay_ms(100);
+}
+
+void mpu9250_clear_int_status(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
+{
+    uint8_t int_status;
+    read_register(twi_driver, mpu9250->address, MPU9250_INT_STATUS, &int_status, 1);
 }
 
 int16_t mpu9250_read_temperature(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)

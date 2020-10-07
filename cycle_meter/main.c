@@ -71,10 +71,7 @@ int main(void)
     log_init();
     gpio_init();
 
-    while (true)
-    {
-        // Do Nothing - GPIO can be toggled without software intervention.
-    }
+    while (true) { }
 
     //for(;;) __WFE();
 }
