@@ -173,9 +173,27 @@ void mpu9250_init(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
 
 int16_t mpu9250_read_temperature(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
 {
-  uint8_t rawData[2];  // x/y/z gyro register data stored here
-  read_register(twi_driver, mpu9250->address, MPU9250_TEMP_OUT, &rawData[0], 2);  // Read the two raw data registers sequentially into data array 
-  return ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a 16-bit value
+    uint8_t rawData[2];  // temp register data stored here
+    read_register(twi_driver, mpu9250->address, MPU9250_TEMP_OUT, &rawData[0], 2);  // Read the two raw data registers sequentially into data array 
+    return ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a 16-bit value
+}
+
+void mpu9250_read_accelerometer(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250, int16_t * accel)
+{
+    uint8_t rawData[6];  // x/y/z accel register data stored here
+    read_register(twi_driver, mpu9250->address, MPU9250_ACCEL_OUT, &rawData[0], 6);  // Read the six raw data registers into data array
+    accel[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+    accel[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;  
+    accel[2] = ((int16_t)rawData[4] << 8) | rawData[5] ; 
+}
+
+void mpu9250_read_gyroscope(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250, int16_t * gyro)
+{
+  uint8_t rawData[6];  // x/y/z gyro register data stored here
+  read_register(twi_driver, mpu9250->address, MPU9250_GYRO_OUT, &rawData[0], 6);  // Read the six raw data registers sequentially into data array
+  gyro[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+  gyro[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;  
+  gyro[2] = ((int16_t)rawData[4] << 8) | rawData[5] ; 
 }
 
 #endif //MPU9250_H

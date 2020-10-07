@@ -51,7 +51,8 @@ void twi_init (void)
 
 #define MPU9250_ADDR 0x68
 
-
+int16_t mpu9250_accel[3];
+int16_t mpu9250_gyro[3];
 
 /**
  * @brief Function for main application entry.
@@ -70,11 +71,21 @@ int main(void)
     int16_t temperature;
 
     twi_init();
-
     mpu9250_init(&m_twi, &mpu9250);
+
+    nrf_delay_ms(1000);
+
     temperature = mpu9250_read_temperature(&m_twi, &mpu9250);
+    mpu9250_read_accelerometer(&m_twi, &mpu9250, mpu9250_accel);
+    mpu9250_read_gyroscope(&m_twi, &mpu9250, mpu9250_gyro);
 
     NRF_LOG_INFO("MPU9250 temperature %d.", temperature);
+    NRF_LOG_INFO("MPU9250 accelerometer x %d.", mpu9250_accel[0]);
+    NRF_LOG_INFO("MPU9250 accelerometer y %d.", mpu9250_accel[1]);
+    NRF_LOG_INFO("MPU9250 accelerometer z %d.", mpu9250_accel[2]);
+    NRF_LOG_INFO("MPU9250 gyroscope x %d.", mpu9250_gyro[0]);
+    NRF_LOG_INFO("MPU9250 gyroscope y %d.", mpu9250_gyro[1]);
+    NRF_LOG_INFO("MPU9250 gyroscope z %d.", mpu9250_gyro[2]);
     NRF_LOG_INFO("MPU9250 ended.");
     NRF_LOG_FLUSH();
-}
+} 
