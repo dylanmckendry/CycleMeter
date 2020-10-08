@@ -120,7 +120,7 @@ void twi_init(void)
     const nrf_drv_twi_config_t twi_config = {
        .scl                = ARDUINO_SCL_PIN,
        .sda                = ARDUINO_SDA_PIN,
-       .frequency          = NRF_DRV_TWI_FREQ_100K, // TODO: 400K
+       .frequency          = NRF_DRV_TWI_FREQ_400K, // TODO: 400K
        .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
        .clear_bus_init     = false
     };
@@ -214,14 +214,29 @@ int main(void)
 
     //while (true) { }
     uint16_t count;
+    uint32_t difference;
+    uint32_t min_difference = 1000;
+    uint32_t max_difference;
+
     for(;;) 
     {
         loop_start = app_timer_cnt_get();
 
         // TODO: set delta freq from timer
-        if (app_timer_cnt_diff_compute(loop_start, imu_update_last) > 20)
+        difference = app_timer_cnt_diff_compute(loop_start, imu_update_last);
+        if (difference > 32) // TODO: why is that 1000 Hz? it was the 100hz in i2c
         {
             count++;
+
+            if (difference < min_difference)
+            {
+                min_difference = difference;
+            }
+            if (difference > max_difference)
+            {
+                max_difference = difference;
+            }
+
             MadgwickAHRSupdateIMU(
               mpu9250.processed_accelerometer[0],
               mpu9250.processed_accelerometer[1],
@@ -230,16 +245,20 @@ int main(void)
               mpu9250.processed_gyroscope[1],
               mpu9250.processed_gyroscope[2]);
             
-            imu_update_last = app_timer_cnt_get();
+            imu_update_last = loop_start;
         }
-
-        if (app_timer_cnt_diff_compute(loop_start, to_euler_angles_last) > 8192)
+        
+        difference = app_timer_cnt_diff_compute(loop_start, to_euler_angles_last);
+        if (difference > 8192)
         {
             to_euler_angles(q0, q1, q2, q3, true);
-            //NRF_LOG_INFO("IMU Update Count: %d.", count);
+            //NRF_LOG_INFO("IMU update count: %d.", count);
+            //NRF_LOG_INFO("IMU update count: %d, IMU min difference %d, IMU max difference %d.", count, min_difference, max_difference);
             NRF_LOG_FLUSH();
             count = 0;
-            to_euler_angles_last = app_timer_cnt_get();
+            min_difference = 1000;
+            max_difference = 0;
+            to_euler_angles_last = loop_start;
         }
 
         //else
@@ -253,8 +272,8 @@ int main(void)
         
 
         
-
         
+        // waits for events which stops the loop
         //__WFE();
     }
 } 

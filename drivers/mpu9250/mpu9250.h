@@ -106,8 +106,8 @@ enum MPU9250Mscale {
   MFS_16BITS      // 0.15 mG per LSB
 };
 
-uint8_t MPU9250Gscale = GFS_500DPS;
-uint8_t MPU9250Ascale = AFS_4G;
+uint8_t MPU9250Gscale = GFS_2000DPS;
+uint8_t MPU9250Ascale = AFS_16G;
 uint8_t MPU9250Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
 uint8_t MPU9250Mmode = 0x06;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 float MPU9250aRes, MPU9250gRes, MPU9250mRes;             // scale resolutions per LSB for the sensors
