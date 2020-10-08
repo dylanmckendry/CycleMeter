@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "boards.h"
 #include "app_util_platform.h"
 #include "app_error.h"
@@ -15,6 +16,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "calculations/madgwick/madgwick.h"
 #include "drivers/mpu9250/mpu9250.h"
 #include "drivers/common/twi_common.h"
 
@@ -26,10 +28,10 @@
 
 #define TIMER_TIMEOUT APP_TIMER_TICKS(2000)
 
-//static app_timer_id_t my_timer_id; 
-uint32_t timer_start;
-uint32_t timer_end;
-uint32_t timer_difference;
+mpu9250_t mpu9250;
+uint32_t loop_start;
+uint32_t imu_update_last;
+uint32_t to_euler_angles_last;
 
 APP_TIMER_DEF(timer_id);
 
@@ -47,6 +49,36 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 static uint8_t m_sample;
 
 
+void to_euler_angles(float q0, float q1, float q2, float q3, bool log)
+{
+    double roll, pitch, yaw;
+
+    // roll (x-axis rotation)
+    double sinr_cosp = 2 * (q0 * q1 + q2 * q3);
+    double cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2);
+    roll = atan2(sinr_cosp, cosr_cosp);
+
+    // pitch (y-axis rotation)
+    double sinp = 2 * (q0 * q2 - q3 * q1);
+    if (abs(sinp) >= 1)
+        pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+    else
+        pitch = asin(sinp);
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (q0 * q3 + q1 * q2);
+    double cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3);
+    yaw = atan2(siny_cosp, cosy_cosp);
+
+    if (log)
+    {
+        //NRF_LOG_INFO("Roll " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(roll));
+        NRF_LOG_INFO("Pitch " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(pitch));
+        //NRF_LOG_INFO("Yaw " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(yaw));
+    }
+}
+
+// TODO: is this low to high or?
 void mpu9250_int_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
     if (action == NRF_GPIOTE_POLARITY_LOTOHI && pin == MPU9250_INT_PIN)
@@ -54,6 +86,14 @@ void mpu9250_int_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t a
         mpu9250_read_accelerometer(&m_twi, &mpu9250);
         mpu9250_read_gyroscope(&m_twi, &mpu9250);
         mpu9250_clear_int_status(&m_twi, &mpu9250); // TODO: could clear on any data read?
+        
+        mpu9250.processed_accelerometer[0] = -(float)mpu9250.accelerometer[0] * MPU9250aRes;
+        mpu9250.processed_accelerometer[1] = (float)mpu9250.accelerometer[1] * MPU9250aRes;
+        mpu9250.processed_accelerometer[2] = (float)mpu9250.accelerometer[2] * MPU9250aRes;
+
+        mpu9250.processed_gyroscope[0] = (float)mpu9250.gyroscope[0] * MPU9250gRes * M_PI / 180.0f;
+        mpu9250.processed_gyroscope[1] = -(float)mpu9250.gyroscope[1] * MPU9250gRes * M_PI / 180.0f;
+        mpu9250.processed_gyroscope[2] = -(float)mpu9250.gyroscope[2] * MPU9250gRes * M_PI / 180.0f;
     }
 }
 
@@ -108,12 +148,6 @@ static void softdevice_setup(void)
 static void timer_handler(void * p_context)
 {
     UNUSED_PARAMETER(p_context);
-    timer_end = app_timer_cnt_get();
-    timer_difference = app_timer_cnt_diff_compute(timer_end, timer_start);
-    NRF_LOG_INFO("MPU9250 timer start %d.", timer_start);
-    NRF_LOG_INFO("MPU9250 timer end %d.", timer_end);
-    NRF_LOG_INFO("MPU9250 timer difference %d.", timer_difference * 0.0305175);
-    timer_start = app_timer_cnt_get();
     //SEGGER_RTT_printf(0, "timer timed out");
 }
 
@@ -148,53 +182,28 @@ int main(void)
     NRF_LOG_INFO("MPU9250 started.");
     NRF_LOG_FLUSH();
 
-    mpu9250 mpu9250;
     mpu9250.address = MPU9250_ADDR;
 
-    int16_t temperature;
-
-    //twi_init();
-    //gpio_init();
+    twi_init();
+    gpio_init();
     timers_init();
     softdevice_setup();
-    //mpu9250_init(&m_twi, &mpu9250);
-
+    mpu9250_init(&m_twi, &mpu9250);
     
-    timers_start();
-    
-    timer_start = app_timer_cnt_get();
-    //nrf_delay_ms(1000);
-    //timer_end = app_timer_cnt_get();
-    //timer_difference = app_timer_cnt_diff_compute(timer_end, timer_start);
-    //NRF_LOG_INFO("MPU9250 timer start %d.", timer_start);
-    //NRF_LOG_INFO("MPU9250 timer end %d.", timer_end);
-    //NRF_LOG_INFO("MPU9250 timer difference %d.", timer_difference);
-    //app_timer_stop(timer_id);
+    loop_start = app_timer_cnt_get();
+    imu_update_last = app_timer_cnt_get() + 8192;
+    to_euler_angles_last = app_timer_cnt_get() + 8192;
 
+    mpu9250_clear_int_status(&m_twi, &mpu9250);
 
-    //uint8_t int_status;
-    //read_register(&m_twi, mpu9250.address, MPU9250_INT_STATUS, &int_status, 1);
-    //NRF_LOG_INFO("MPU9250 int status %d.", int_status);
-    //NRF_LOG_FLUSH();
-    //nrf_delay_ms(1000);
-
-    //read_register(&m_twi, mpu9250.address, MPU9250_INT_STATUS, &int_status, 1);
-    //NRF_LOG_INFO("MPU9250 int status %d.", int_status);
-    //NRF_LOG_FLUSH();
-    //nrf_delay_ms(1000);
-    //temperature = mpu9250_read_temperature(&m_twi, &mpu9250);
-    //mpu9250_read_accelerometer(&m_twi, &mpu9250, mpu9250_accel);
-    //mpu9250_read_gyroscope(&m_twi, &mpu9250, mpu9250_gyro);
-
-    //NRF_LOG_INFO("MPU9250 temperature %d.", temperature);
-    //NRF_LOG_INFO("MPU9250 accelerometer x %d.", mpu9250_accel[0]);
-    //NRF_LOG_INFO("MPU9250 accelerometer y %d.", mpu9250_accel[1]);
-    //NRF_LOG_INFO("MPU9250 accelerometer z %d.", mpu9250_accel[2]);
-    //NRF_LOG_INFO("MPU9250 gyroscope x %d.", mpu9250_gyro[0]);
-    //NRF_LOG_INFO("MPU9250 gyroscope y %d.", mpu9250_gyro[1]);
-    //NRF_LOG_INFO("MPU9250 gyroscope z %d.", mpu9250_gyro[2]);
-    NRF_LOG_INFO("MPU9250 ended.");
-    NRF_LOG_FLUSH();
+    //mpu9250_read_accelerometer(&m_twi, &mpu9250);
+    //mpu9250_read_gyroscope(&m_twi, &mpu9250);
+    //NRF_LOG_INFO("MPU9250 accelerometer x %d.", mpu9250.accelerometer[0]);
+    //NRF_LOG_INFO("MPU9250 accelerometer y %d.", mpu9250.accelerometer[1]);
+    //NRF_LOG_INFO("MPU9250 accelerometer z %d.", mpu9250.accelerometer[2]);
+    //NRF_LOG_INFO("MPU9250 gyroscope x %d.", mpu9250.gyroscope[0]);
+    //NRF_LOG_INFO("MPU9250 gyroscope y %d.", mpu9250.gyroscope[1]);
+    //NRF_LOG_INFO("MPU9250 gyroscope z %d.", mpu9250.gyroscope[2]);
 
     //while (true)
     //{
@@ -204,10 +213,48 @@ int main(void)
     //}
 
     //while (true) { }
-
+    uint16_t count;
     for(;;) 
     {
-        NRF_LOG_FLUSH();
-        __WFE();
+        loop_start = app_timer_cnt_get();
+
+        // TODO: set delta freq from timer
+        if (app_timer_cnt_diff_compute(loop_start, imu_update_last) > 20)
+        {
+            count++;
+            MadgwickAHRSupdateIMU(
+              mpu9250.processed_accelerometer[0],
+              mpu9250.processed_accelerometer[1],
+              mpu9250.processed_accelerometer[2],
+              mpu9250.processed_gyroscope[0],
+              mpu9250.processed_gyroscope[1],
+              mpu9250.processed_gyroscope[2]);
+            
+            imu_update_last = app_timer_cnt_get();
+        }
+
+        if (app_timer_cnt_diff_compute(loop_start, to_euler_angles_last) > 8192)
+        {
+            to_euler_angles(q0, q1, q2, q3, true);
+            //NRF_LOG_INFO("IMU Update Count: %d.", count);
+            NRF_LOG_FLUSH();
+            count = 0;
+            to_euler_angles_last = app_timer_cnt_get();
+        }
+
+        //else
+        //{
+        //    NRF_LOG_INFO("Skip");
+        //}
+        //NRF_LOG_INFO("MPU9250 timer difference " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(timer_difference));
+        //
+        
+        
+        
+
+        
+
+        
+        //__WFE();
     }
 } 

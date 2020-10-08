@@ -511,6 +511,8 @@
       <file file_name="sdk_config.h" />
       <file file_name="drivers/mpu9250/mpu9250.h" />
       <file file_name="drivers/common/twi_common.h" />
+      <file file_name="calculations/madgwick/madgwick.h" />
+      <file file_name="calculations/madgwick/madgwick.c" />
     </folder>
   </project>
   <configuration

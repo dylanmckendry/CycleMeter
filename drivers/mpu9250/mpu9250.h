@@ -6,7 +6,7 @@
 #include "nrf_delay.h"
 
 #include "drivers/common/twi_common.h"
-
+// TODO: need to add in self test
 // MPU9250 registers
 const uint8_t MPU9250_ACCEL_OUT = 0x3B;
 const uint8_t MPU9250_GYRO_OUT = 0x43;
@@ -106,8 +106,8 @@ enum MPU9250Mscale {
   MFS_16BITS      // 0.15 mG per LSB
 };
 
-uint8_t MPU9250Gscale = GFS_250DPS;
-uint8_t MPU9250Ascale = AFS_2G;
+uint8_t MPU9250Gscale = GFS_500DPS;
+uint8_t MPU9250Ascale = AFS_4G;
 uint8_t MPU9250Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
 uint8_t MPU9250Mmode = 0x06;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 float MPU9250aRes, MPU9250gRes, MPU9250mRes;             // scale resolutions per LSB for the sensors
@@ -115,12 +115,66 @@ float MPU9250aRes, MPU9250gRes, MPU9250mRes;             // scale resolutions pe
 typedef struct
 {
     uint8_t address;
-    int16_t accelerometer[3];
-    int16_t gyroscope[3];
-} mpu9250;
 
-void mpu9250_init(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
+    uint8_t raw_int_status;
+
+    uint8_t raw_accelerometer[6];
+    int16_t accelerometer[3];
+    float processed_accelerometer[3];
+
+    uint8_t raw_gyroscope[6];
+    int16_t gyroscope[3];
+    float processed_gyroscope[3];
+} mpu9250_t;
+
+void MPU9250getGres() {
+  switch (MPU9250Gscale)
+  {
+ 	// Possible gyro scales (and their register bit settings) are:
+	// 250 DPS (00), 500 DPS (01), 1000 DPS (10), and 2000 DPS  (11). 
+        // Here's a bit of an algorith to calculate DPS/(ADC tick) based on that 2-bit value:
+    case GFS_250DPS:
+          MPU9250gRes = 250.0/32768.0;
+          break;
+    case GFS_500DPS:
+          MPU9250gRes = 500.0/32768.0;
+          break;
+    case GFS_1000DPS:
+          MPU9250gRes = 1000.0/32768.0;
+          break;
+    case GFS_2000DPS:
+          MPU9250gRes = 2000.0/32768.0;
+          break;
+  }
+}
+
+void MPU9250getAres() {
+  switch (MPU9250Ascale)
+  {
+ 	// Possible accelerometer scales (and their register bit settings) are:
+	// 2 Gs (00), 4 Gs (01), 8 Gs (10), and 16 Gs  (11). 
+        // Here's a bit of an algorith to calculate DPS/(ADC tick) based on that 2-bit value:
+    case AFS_2G:
+          MPU9250aRes = 2.0/32768.0;
+          break;
+    case AFS_4G:
+          MPU9250aRes = 4.0/32768.0;
+          break;
+    case AFS_8G:
+          MPU9250aRes = 8.0/32768.0;
+          break;
+    case AFS_16G:
+          MPU9250aRes = 16.0/32768.0;
+          break;
+  }
+}
+
+void mpu9250_init(nrf_drv_twi_t const * twi_driver, mpu9250_t const * mpu9250)
 {
+    // HACK: move
+    MPU9250getAres();
+    MPU9250getGres();
+
     write_register(twi_driver, mpu9250->address, MPU9250_PWR_MGMNT_1, 0x00);
     nrf_delay_ms(100);
 
@@ -174,38 +228,38 @@ void mpu9250_init(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
     nrf_delay_ms(100);
 }
 
-void mpu9250_clear_int_status(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
+void mpu9250_clear_int_status(nrf_drv_twi_t const * twi_driver, mpu9250_t * mpu9250)
 {
-    uint8_t int_status;
-    read_register(twi_driver, mpu9250->address, MPU9250_INT_STATUS, &int_status, 1);
+    read_register(twi_driver, mpu9250->address, MPU9250_INT_STATUS, &mpu9250->raw_int_status, 1);
 }
 
-int16_t mpu9250_read_temperature(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
+//int16_t mpu9250_read_temperature(nrf_drv_twi_t const * twi_driver, mpu9250_t const * mpu9250)
+//{
+//    // TODO: don't recreate these?
+//    uint8_t rawData[2];  // temp register data stored here
+//    read_register(twi_driver, mpu9250->address, MPU9250_TEMP_OUT, &rawData[0], 2);  // Read the two raw data registers sequentially into data array 
+//    return ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a 16-bit value
+//}
+
+void mpu9250_read_accelerometer(nrf_drv_twi_t const * twi_driver, mpu9250_t * mpu9250)
 {
     // TODO: don't recreate these?
-    uint8_t rawData[2];  // temp register data stored here
-    read_register(twi_driver, mpu9250->address, MPU9250_TEMP_OUT, &rawData[0], 2);  // Read the two raw data registers sequentially into data array 
-    return ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a 16-bit value
+    // TODO: can read all of these at once and just ignore temp
+    //uint8_t rawData[6];  // x/y/z accel register data stored here
+    read_register(twi_driver, mpu9250->address, MPU9250_ACCEL_OUT, &mpu9250->raw_accelerometer[0], 6);  // Read the six raw data registers into data array
+    mpu9250->accelerometer[0] = ((int16_t)mpu9250->raw_accelerometer[0] << 8) | mpu9250->raw_accelerometer[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+    mpu9250->accelerometer[1] = ((int16_t)mpu9250->raw_accelerometer[2] << 8) | mpu9250->raw_accelerometer[3] ;  
+    mpu9250->accelerometer[2] = ((int16_t)mpu9250->raw_accelerometer[4] << 8) | mpu9250->raw_accelerometer[5] ; 
 }
 
-void mpu9250_read_accelerometer(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
+void mpu9250_read_gyroscope(nrf_drv_twi_t const * twi_driver, mpu9250_t * mpu9250)
 {
     // TODO: don't recreate these?
-    uint8_t rawData[6];  // x/y/z accel register data stored here
-    read_register(twi_driver, mpu9250->address, MPU9250_ACCEL_OUT, &rawData[0], 6);  // Read the six raw data registers into data array
-    mpu9250->accelerometer[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
-    mpu9250->accelerometer[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;  
-    mpu9250->accelerometer[2] = ((int16_t)rawData[4] << 8) | rawData[5] ; 
-}
-
-void mpu9250_read_gyroscope(nrf_drv_twi_t const * twi_driver, mpu9250 const * mpu9250)
-{
-    // TODO: don't recreate these?
-    uint8_t rawData[6];  // x/y/z gyro register data stored here
-    read_register(twi_driver, mpu9250->address, MPU9250_GYRO_OUT, &rawData[0], 6);  // Read the six raw data registers sequentially into data array
-    mpu9250->gyroscope[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
-    mpu9250->gyroscope[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;  
-    mpu9250->gyroscope[2] = ((int16_t)rawData[4] << 8) | rawData[5] ; 
+    //uint8_t rawData[6];  // x/y/z gyro register data stored here
+    read_register(twi_driver, mpu9250->address, MPU9250_GYRO_OUT, &mpu9250->raw_gyroscope[0], 6);  // Read the six raw data registers sequentially into data array
+    mpu9250->gyroscope[0] = ((int16_t)mpu9250->raw_gyroscope[0] << 8) | mpu9250->raw_gyroscope[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+    mpu9250->gyroscope[1] = ((int16_t)mpu9250->raw_gyroscope[2] << 8) | mpu9250->raw_gyroscope[3] ;  
+    mpu9250->gyroscope[2] = ((int16_t)mpu9250->raw_gyroscope[4] << 8) | mpu9250->raw_gyroscope[5] ;
 }
 
 #endif //MPU9250_H
