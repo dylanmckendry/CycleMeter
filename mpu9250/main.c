@@ -24,9 +24,6 @@
 #define MPU9250_ADDR 0x68
 #define MPU9250_INT_PIN 3
 
-int16_t mpu9250_accel[3];
-int16_t mpu9250_gyro[3];
-
 #define TIMER_TIMEOUT APP_TIMER_TICKS(2000)
 
 //static app_timer_id_t my_timer_id; 
@@ -54,9 +51,10 @@ void mpu9250_int_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t a
 {
     if (action == NRF_GPIOTE_POLARITY_LOTOHI && pin == MPU9250_INT_PIN)
     {
-        // ready to read
-        //NRF_LOG_INFO("Int pin triggered.");
-    }    
+        mpu9250_read_accelerometer(&m_twi, &mpu9250);
+        mpu9250_read_gyroscope(&m_twi, &mpu9250);
+        mpu9250_clear_int_status(&m_twi, &mpu9250); // TODO: could clear on any data read?
+    }
 }
 
 static void gpio_init()
@@ -82,7 +80,7 @@ void twi_init(void)
     const nrf_drv_twi_config_t twi_config = {
        .scl                = ARDUINO_SCL_PIN,
        .sda                = ARDUINO_SDA_PIN,
-       .frequency          = NRF_DRV_TWI_FREQ_100K,
+       .frequency          = NRF_DRV_TWI_FREQ_100K, // TODO: 400K
        .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
        .clear_bus_init     = false
     };
@@ -114,7 +112,7 @@ static void timer_handler(void * p_context)
     timer_difference = app_timer_cnt_diff_compute(timer_end, timer_start);
     NRF_LOG_INFO("MPU9250 timer start %d.", timer_start);
     NRF_LOG_INFO("MPU9250 timer end %d.", timer_end);
-    NRF_LOG_INFO("MPU9250 timer difference %d.", timer_difference);
+    NRF_LOG_INFO("MPU9250 timer difference %d.", timer_difference * 0.0305175);
     timer_start = app_timer_cnt_get();
     //SEGGER_RTT_printf(0, "timer timed out");
 }
@@ -141,6 +139,7 @@ static void timers_start(void)
     APP_ERROR_CHECK(err_code);
 }
 
+// TODO: need to look at RTC and power example
 int main(void)
 {
     APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
