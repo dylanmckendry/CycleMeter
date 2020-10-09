@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+
 #include "boards.h"
 #include "app_util_platform.h"
 #include "app_error.h"
@@ -44,7 +45,6 @@ APP_TIMER_DEF(timer_id);
 #elif TWI1_ENABLED
 #define TWI_INSTANCE_ID     1
 #endif
-
 
 /* TWI instance. */
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
@@ -127,24 +127,6 @@ static void gpio_init()
     nrf_drv_gpiote_in_event_enable(MPU9250_INT_PIN, true);
 }
 
-void twi_init(void)
-{
-    ret_code_t err_code;
-
-    const nrf_drv_twi_config_t twi_config = {
-       .scl                = ARDUINO_SCL_PIN,
-       .sda                = ARDUINO_SDA_PIN,
-       .frequency          = NRF_DRV_TWI_FREQ_400K, // TODO: 400K
-       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-       .clear_bus_init     = false
-    };
-
-    err_code = nrf_drv_twi_init(&m_twi, &twi_config, NULL, NULL);
-    APP_ERROR_CHECK(err_code);
-
-    nrf_drv_twi_enable(&m_twi);
-}
-
 static void softdevice_setup(void)
 {
     ret_code_t err_code = nrf_sdh_enable_request();
@@ -201,7 +183,8 @@ int main(void)
     average_calculator.min_readings = 5;
     average_calculator.max_readings = 10;
 
-    twi_init();
+    // TODO: can we do blocking then unblocking
+    twi_init(&m_twi, ARDUINO_SCL_PIN, ARDUINO_SDA_PIN, NULL);
     gpio_init();
     timers_init();
     softdevice_setup();
