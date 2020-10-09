@@ -17,6 +17,7 @@
 #include "nrf_log_default_backends.h"
 
 #include "calculations/madgwick/madgwick.h"
+#include "calculations/maths/average_calculator.h"
 #include "drivers/mpu9250/mpu9250.h"
 #include "drivers/common/twi_common.h"
 
@@ -33,6 +34,8 @@ uint32_t loop_start;
 uint32_t imu_update_last;
 uint32_t to_euler_angles_last;
 
+average_calculator_t average_calculator
+
 APP_TIMER_DEF(timer_id);
 
 /* TWI instance ID. */
@@ -48,34 +51,45 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 
 static uint8_t m_sample;
 
+float degrees_to_radians(float degrees) {
+    return degrees * (M_PI / 180.0f);
+}
 
-void to_euler_angles(float q0, float q1, float q2, float q3, bool log)
+float radians_to_degrees(float radians) {
+    return radians / (M_PI / 180.0f);
+}
+
+void to_euler_angles(float q0, float q1, float q2, float q3)
 {
-    double roll, pitch, yaw;
+    float roll, pitch, yaw;
 
     // roll (x-axis rotation)
-    double sinr_cosp = 2 * (q0 * q1 + q2 * q3);
-    double cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2);
+    float sinr_cosp = 2 * (q0 * q1 + q2 * q3);
+    float cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2);
     roll = atan2(sinr_cosp, cosr_cosp);
 
     // pitch (y-axis rotation)
-    double sinp = 2 * (q0 * q2 - q3 * q1);
+    float sinp = 2 * (q0 * q2 - q3 * q1);
     if (abs(sinp) >= 1)
         pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
     else
         pitch = asin(sinp);
 
     // yaw (z-axis rotation)
-    double siny_cosp = 2 * (q0 * q3 + q1 * q2);
-    double cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3);
+    float siny_cosp = 2 * (q0 * q3 + q1 * q2);
+    float cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3);
     yaw = atan2(siny_cosp, cosy_cosp);
 
-    if (log)
-    {
+    on_reading(&average_calculator, pitch);
+
+    //if (log)
+    //{
         //NRF_LOG_INFO("Roll " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(roll));
-        NRF_LOG_INFO("Pitch " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(pitch));
+        //NRF_LOG_INFO("Pitch " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(pitch));
         //NRF_LOG_INFO("Yaw " NRF_LOG_FLOAT_MARKER ".", NRF_LOG_FLOAT(yaw));
-    }
+        //NRF_LOG_INFO(NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(radians_to_degrees(roll)));
+        //NRF_LOG_INFO(NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(radians_to_degrees(pitch)));
+    //}
 }
 
 // TODO: is this low to high or?
@@ -183,6 +197,9 @@ int main(void)
     NRF_LOG_FLUSH();
 
     mpu9250.address = MPU9250_ADDR;
+    average_calculator.aggregate_readings_count = 250;
+    average_calculator.min_readings = 5;
+    average_calculator.max_readings = 10;
 
     twi_init();
     gpio_init();
@@ -245,13 +262,16 @@ int main(void)
               mpu9250.processed_gyroscope[1],
               mpu9250.processed_gyroscope[2]);
             
+            to_euler_angles(q0, q1, q2, q3);
+
             imu_update_last = loop_start;
         }
         
         difference = app_timer_cnt_diff_compute(loop_start, to_euler_angles_last);
         if (difference > 8192)
         {
-            to_euler_angles(q0, q1, q2, q3, true);
+            NRF_LOG_INFO(NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(radians_to_degrees(average_calculator.average)));
+            //to_euler_angles(q0, q1, q2, q3, true);
             //NRF_LOG_INFO("IMU update count: %d.", count);
             //NRF_LOG_INFO("IMU update count: %d, IMU min difference %d, IMU max difference %d.", count, min_difference, max_difference);
             NRF_LOG_FLUSH();
