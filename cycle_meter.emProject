@@ -509,8 +509,11 @@
     <folder Name="Application">
       <file file_name="mpu9250/main.c" />
       <file file_name="sdk_config.h" />
+      <file file_name="drivers/mpu9250/mpu9250_registers.h" />
       <file file_name="drivers/mpu9250/mpu9250.h" />
+      <file file_name="drivers/mpu9250/mpu9250.c" />
       <file file_name="drivers/common/twi_common.h" />
+      <file file_name="drivers/common/twi_common.c" />
       <file file_name="calculations/madgwick/madgwick.h" />
       <file file_name="calculations/madgwick/madgwick.c" />
       <file file_name="calculations/maths/average_calculator.h" />

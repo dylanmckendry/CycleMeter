@@ -101,13 +101,13 @@ void mpu9250_int_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t a
         mpu9250_read_gyroscope(&m_twi, &mpu9250);
         mpu9250_clear_int_status(&m_twi, &mpu9250); // TODO: could clear on any data read?
         
-        mpu9250.processed_accelerometer[0] = -(float)mpu9250.accelerometer[0] * MPU9250aRes;
-        mpu9250.processed_accelerometer[1] = (float)mpu9250.accelerometer[1] * MPU9250aRes;
-        mpu9250.processed_accelerometer[2] = (float)mpu9250.accelerometer[2] * MPU9250aRes;
+        mpu9250.processed_accelerometer[0] = -(float)mpu9250.accelerometer[0] * mpu9250.accel_res;
+        mpu9250.processed_accelerometer[1] = (float)mpu9250.accelerometer[1] * mpu9250.accel_res;
+        mpu9250.processed_accelerometer[2] = (float)mpu9250.accelerometer[2] * mpu9250.accel_res;
 
-        mpu9250.processed_gyroscope[0] = (float)mpu9250.gyroscope[0] * MPU9250gRes * M_PI / 180.0f;
-        mpu9250.processed_gyroscope[1] = -(float)mpu9250.gyroscope[1] * MPU9250gRes * M_PI / 180.0f;
-        mpu9250.processed_gyroscope[2] = -(float)mpu9250.gyroscope[2] * MPU9250gRes * M_PI / 180.0f;
+        mpu9250.processed_gyroscope[0] = (float)mpu9250.gyroscope[0] * mpu9250.gyro_res * M_PI / 180.0f;
+        mpu9250.processed_gyroscope[1] = -(float)mpu9250.gyroscope[1] * mpu9250.gyro_res * M_PI / 180.0f;
+        mpu9250.processed_gyroscope[2] = -(float)mpu9250.gyroscope[2] * mpu9250.gyro_res * M_PI / 180.0f;
     }
 }
 
