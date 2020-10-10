@@ -67,7 +67,11 @@ static ant_bsc_profile_t m_ant_bsc;
 NRF_SDH_ANT_OBSERVER(m_ant_bsc_observer, ANT_BSC_ANT_OBSERVER_PRIO,
                      ant_bsc_sens_evt_handler, &m_ant_bsc);
 
-
+// TODO: what is this event, can we set these values else where and ignore this?
+// looks like this can be ignored and we can just set these out side of this and let the 
+// softdevice send this data
+// 7.2 Power-Only Sensors
+// cadence set to 0xFF for invalid
 void ant_bpwr_evt_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_evt_t event)
 {
     // TODO: what does this do?
@@ -75,7 +79,7 @@ void ant_bpwr_evt_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_evt_t event)
 
     switch (event)
     {
-        case ANT_BPWR_PAGE_1_UPDATED:
+        case ANT_BPWR_PAGE_1_UPDATED: // calibration, there is supposed to be page two for get set
             /* fall through */
         case ANT_BPWR_PAGE_16_UPDATED:
             p_profile->BPWR_PROFILE_instantaneous_power = 10;
@@ -91,9 +95,9 @@ void ant_bpwr_evt_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_evt_t event)
             p_profile->BPWR_PROFILE_power_update_event_count++;
             break;
             /* fall through */
-        case ANT_BPWR_PAGE_17_UPDATED:
+        case ANT_BPWR_PAGE_17_UPDATED: // not needed
             break;
-        case ANT_BPWR_PAGE_18_UPDATED:
+        case ANT_BPWR_PAGE_18_UPDATED: // not needed
             break;
         case ANT_BPWR_PAGE_80_UPDATED:
             /* fall through */
