@@ -59,6 +59,11 @@
 #define BPWR_CHANNEL_NUM 0
 #endif
 
+// <o> BSC_CHANNEL_NUM - Channel number assigned to BSC profile. 
+#ifndef BSC_CHANNEL_NUM
+#define BSC_CHANNEL_NUM 1
+#endif
+
 // <o> CALIBRATION_DATA - Calibration data. 
 #ifndef CALIBRATION_DATA
 #define CALIBRATION_DATA 21930
@@ -127,14 +132,14 @@
 // </h> 
 //==========================================================
 
-// <o> SENSOR_TYPE  - Type of transmitted data
+// <o> BPWR_SENSOR_TYPE  - Type of transmitted data
  
 // <0=> Power Only Sensor 
 // <1=> Wheel Torque Sensor 
 // <2=> Crank Torque Sensor 
 
-#ifndef SENSOR_TYPE
-#define SENSOR_TYPE 0
+#ifndef BPWR_SENSOR_TYPE
+#define BPWR_SENSOR_TYPE 0
 #endif
 
 // </h> 
@@ -389,6 +394,312 @@
 
 #ifndef ANT_BPWR_PAGE_18_INFO_COLOR
 #define ANT_BPWR_PAGE_18_INFO_COLOR 0
+#endif
+
+// </e>
+
+// </e>
+
+// </h> 
+//==========================================================
+
+// <o> SENSOR_TYPE  - Type of transmitted data
+ 
+// <121=> Combined data 
+// <122=> Cadence data 
+// <123=> Speed data 
+
+#ifndef BSC_SENSOR_TYPE
+#define BSC_SENSOR_TYPE 121
+#endif
+
+// </h> 
+//==========================================================
+
+// <h> nRF_ANT 
+
+//==========================================================
+// <e> ANT_BSC_ENABLED - ant_bsc - Bicycle Speed and Cadence Profile
+//==========================================================
+#ifndef ANT_BSC_ENABLED
+#define ANT_BSC_ENABLED 1
+#endif
+// <e> ANT_BSC_LOG_ENABLED - Enables general logging in the module.
+//==========================================================
+#ifndef ANT_BSC_LOG_ENABLED
+#define ANT_BSC_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_LOG_LEVEL
+#define ANT_BSC_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_INFO_COLOR
+#define ANT_BSC_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_COMBINED_PAGE_0_LOG_ENABLED - Enables logging of BSC Combined page 0 in the module.
+//==========================================================
+#ifndef ANT_BSC_COMBINED_PAGE_0_LOG_ENABLED
+#define ANT_BSC_COMBINED_PAGE_0_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_COMBINED_PAGE_0_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_COMBINED_PAGE_0_LOG_LEVEL
+#define ANT_BSC_COMBINED_PAGE_0_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_COMBINED_PAGE_0_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_COMBINED_PAGE_0_INFO_COLOR
+#define ANT_BSC_COMBINED_PAGE_0_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_0_LOG_ENABLED - Enables logging of BSC page 0 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_0_LOG_ENABLED
+#define ANT_BSC_PAGE_0_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_0_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_0_LOG_LEVEL
+#define ANT_BSC_PAGE_0_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_0_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_0_INFO_COLOR
+#define ANT_BSC_PAGE_0_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_1_LOG_ENABLED - Enables logging of BSC page 1 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_1_LOG_ENABLED
+#define ANT_BSC_PAGE_1_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_1_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_1_LOG_LEVEL
+#define ANT_BSC_PAGE_1_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_1_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_1_INFO_COLOR
+#define ANT_BSC_PAGE_1_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_2_LOG_ENABLED - Enables logging of BSC page 2 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_2_LOG_ENABLED
+#define ANT_BSC_PAGE_2_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_2_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_2_LOG_LEVEL
+#define ANT_BSC_PAGE_2_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_2_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_2_INFO_COLOR
+#define ANT_BSC_PAGE_2_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_3_LOG_ENABLED - Enables logging of BSC page 3 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_3_LOG_ENABLED
+#define ANT_BSC_PAGE_3_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_3_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_3_LOG_LEVEL
+#define ANT_BSC_PAGE_3_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_3_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_3_INFO_COLOR
+#define ANT_BSC_PAGE_3_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_4_LOG_ENABLED - Enables logging of BSC page 4 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_4_LOG_ENABLED
+#define ANT_BSC_PAGE_4_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_4_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_4_LOG_LEVEL
+#define ANT_BSC_PAGE_4_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_4_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_4_INFO_COLOR
+#define ANT_BSC_PAGE_4_INFO_COLOR 0
+#endif
+
+// </e>
+
+// <e> ANT_BSC_PAGE_5_LOG_ENABLED - Enables logging of BSC page 5 in the module.
+//==========================================================
+#ifndef ANT_BSC_PAGE_5_LOG_ENABLED
+#define ANT_BSC_PAGE_5_LOG_ENABLED 1
+#endif
+// <o> ANT_BSC_PAGE_5_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef ANT_BSC_PAGE_5_LOG_LEVEL
+#define ANT_BSC_PAGE_5_LOG_LEVEL 3
+#endif
+
+// <o> ANT_BSC_PAGE_5_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef ANT_BSC_PAGE_5_INFO_COLOR
+#define ANT_BSC_PAGE_5_INFO_COLOR 0
 #endif
 
 // </e>
