@@ -5,7 +5,7 @@
 #include "nrf_drv_twi.h"
 #include "nrf_delay.h"
 
-#include "drivers/common/twi_common.h"
+#include "twi_common.h"
 
 uint8_t MPU9250Gscale = GFS_2000DPS;
 uint8_t MPU9250Ascale = AFS_16G;

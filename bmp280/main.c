@@ -9,8 +9,8 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-#include "drivers/bmp280/bmp280.h"
-#include "drivers/common/twi_common.h"
+#include "bmp280.h"
+#include "twi_common.h"
 
 #define ARDUINO_SCL_PIN             20    // SCL signal pin
 #define ARDUINO_SDA_PIN             21    // SDA signal pin

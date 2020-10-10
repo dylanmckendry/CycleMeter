@@ -17,10 +17,10 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-#include "calculations/madgwick/madgwick.h"
-#include "calculations/maths/average_calculator.h"
-#include "drivers/mpu9250/mpu9250.h"
-#include "drivers/common/twi_common.h"
+#include "madgwick.h"
+#include "average_calculator.h"
+#include "mpu9250.h"
+#include "twi_common.h"
 
 #define ARDUINO_SCL_PIN             20    // SCL signal pin
 #define ARDUINO_SDA_PIN             21    // SDA signal pin

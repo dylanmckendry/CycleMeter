@@ -5,7 +5,7 @@
 #include "nrf_drv_twi.h"
 #include "nrf_delay.h"
 
-#include "drivers/common/twi_common.h"
+#include "twi_common.h"
 
 
 // set pressure amd temperature output data rate
