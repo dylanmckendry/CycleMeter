@@ -117,7 +117,23 @@
     </folder>
     <folder Name="Application">
       <file file_name="cycle_meter/main.c" />
+      <file file_name="cycle_meter/cycle_meter_config.h" />
       <file file_name="config/sdk_config.h" />
+      <file file_name="components/rotation_sensor.h" />
+      <file file_name="components/rotation_sensor.c" />
+      <file file_name="drivers/mpu9250_registers.h" />
+      <file file_name="drivers/mpu9250.h" />
+      <file file_name="drivers/mpu9250.c" />
+      <file file_name="drivers/twi_common.h" />
+      <file file_name="drivers/twi_common.c" />
+      <file file_name="calculations/calculations_constants.h" />
+      <file file_name="calculations/calculations.h" />
+      <file file_name="calculations/average_calculator.h" />
+      <file file_name="calculations/average_calculator.c" />
+      <file file_name="calculations/rotation_calculator.h" />
+      <file file_name="calculations/rotation_calculator.c" />
+      <file file_name="calculations/madgwick.h" />
+      <file file_name="calculations/madgwick.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(nRF5SDK17Dir)/external/segger_rtt/SEGGER_RTT.c" />
@@ -245,6 +261,7 @@
     </folder>
     <folder Name="Application">
       <file file_name="twi_scanner/main.c" />
+      <file file_name="cycle_meter/cycle_meter_config.h" />
       <file file_name="config/sdk_config.h" />
     </folder>
     <folder Name="nRF_Segger_RTT">
@@ -373,6 +390,7 @@
     </folder>
     <folder Name="Application">
       <file file_name="bmp280/main.c" />
+      <file file_name="cycle_meter/cycle_meter_config.h" />
       <file file_name="config/sdk_config.h" />
       <file file_name="drivers/bmp280_registers.h" />
       <file file_name="drivers/bmp280/bmp280.h" />
@@ -520,6 +538,7 @@
     </folder>
     <folder Name="Application">
       <file file_name="mpu9250/main.c" />
+      <file file_name="cycle_meter/cycle_meter_config.h" />
       <file file_name="config/sdk_config.h" />
       <file file_name="drivers/mpu9250_registers.h" />
       <file file_name="drivers/mpu9250.h" />
@@ -529,6 +548,7 @@
       <file file_name="calculations/madgwick.h" />
       <file file_name="calculations/madgwick.c" />
       <file file_name="calculations/average_calculator.h" />
+      <file file_name="calculations/average_calculator.c" />
     </folder>
   </project>
   <project Name="HallEffect">
@@ -656,6 +676,7 @@
     </folder>
     <folder Name="Application">
       <file file_name="hall_effect/main.c" />
+      <file file_name="cycle_meter/cycle_meter_config.h" />
       <file file_name="config/sdk_config.h" />
     </folder>
   </project>

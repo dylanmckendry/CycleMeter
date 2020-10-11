@@ -1,5 +1,5 @@
-#ifndef MPU9250_H
-#define MPU9250_H
+#ifndef CYCLE_METER_MPU9250_H
+#define CYCLE_METER_MPU9250_H
 
 #include <stdint.h>
 

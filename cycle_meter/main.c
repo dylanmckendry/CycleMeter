@@ -21,8 +21,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-#define WHEEL_SENSOR_PIN 20
-#define CRANK_SENSOR_PIN 21
+#include "calculations.h"
 
 // bpwr
 void ant_bpwr_evt_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_evt_t event);
@@ -173,15 +172,6 @@ void ant_bsc_evt_handler(ant_bsc_profile_t * p_profile, ant_bsc_evt_t event)
     }
 }
 
-void wheel_sensor_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
-{
-    if (action == NRF_GPIOTE_POLARITY_LOTOHI && pin == WHEEL_SENSOR_PIN)
-    {
-        char string_on_stack[] = "stack";
-        NRF_LOG_INFO("%s",string_on_stack);
-    }    
-}
-
 static void log_init(void)
 {
     ret_code_t err_code = NRF_LOG_INIT(NULL);
@@ -212,11 +202,6 @@ static void gpio_init()
         err_code = nrf_drv_gpiote_init();
         APP_ERROR_CHECK(err_code);
     }
-
-    nrf_drv_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_LOTOHI(true);
-    //config.pull = NRF_GPIO_PIN_PULLUP;
-    nrf_drv_gpiote_in_init(WHEEL_SENSOR_PIN, &config, wheel_sensor_event_handler);
-    nrf_drv_gpiote_in_event_enable(WHEEL_SENSOR_PIN, true);
 }
 
 static void softdevice_setup(void)

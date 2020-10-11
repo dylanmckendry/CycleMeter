@@ -17,16 +17,12 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "cycle_meter/cycle_meter_config.h"
 #include "madgwick.h"
 #include "average_calculator.h"
+#include "calculations.h"
 #include "mpu9250.h"
 #include "twi_common.h"
-
-#define ARDUINO_SCL_PIN             20    // SCL signal pin
-#define ARDUINO_SDA_PIN             21    // SDA signal pin
-
-#define MPU9250_ADDR 0x68
-#define MPU9250_INT_PIN 3
 
 #define TIMER_TIMEOUT APP_TIMER_TICKS(2000)
 
@@ -51,14 +47,6 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 
 static uint8_t m_sample;
 
-float degrees_to_radians(float degrees) {
-    return degrees * (M_PI / 180.0f);
-}
-
-float radians_to_degrees(float radians) {
-    return radians / (M_PI / 180.0f);
-}
-
 void to_euler_angles(float q0, float q1, float q2, float q3)
 {
     float roll, pitch, yaw;
@@ -80,7 +68,7 @@ void to_euler_angles(float q0, float q1, float q2, float q3)
     float cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3);
     yaw = atan2(siny_cosp, cosy_cosp);
 
-    on_reading(&average_calculator, pitch);
+    average_calculator_on_reading(&average_calculator, pitch);
 
     //if (log)
     //{
@@ -179,12 +167,12 @@ int main(void)
     NRF_LOG_FLUSH();
 
     mpu9250.address = MPU9250_ADDR;
-    average_calculator.aggregate_readings_count = 250;
-    average_calculator.min_readings = 5;
-    average_calculator.max_readings = 10;
+    average_calculator._aggregate_readings_count = 250;
+    average_calculator._min_readings = 5;
+    average_calculator._max_readings = 10;
 
     // TODO: can we do blocking then unblocking
-    twi_init(&m_twi, ARDUINO_SCL_PIN, ARDUINO_SDA_PIN, NULL);
+    twi_init(&m_twi, TWI_SCL_PIN, TWI_SDA_PIN, NULL);
     gpio_init();
     timers_init();
     softdevice_setup();
