@@ -64,19 +64,29 @@
 #define BSC_CHANNEL_NUM 1
 #endif
 
-// <o> CALIBRATION_DATA - Calibration data. 
-#ifndef CALIBRATION_DATA
-#define CALIBRATION_DATA 21930
+// <o> BPWR_CALIBRATION_DATA - Calibration data. 
+#ifndef BPWR_CALIBRATION_DATA
+#define BPWR_CALIBRATION_DATA 21930
 #endif
 
-// <o> CHAN_ID_DEV_NUM - Channel ID: Device Number. 
-#ifndef CHAN_ID_DEV_NUM
-#define CHAN_ID_DEV_NUM 1
+// <o> BPWR_CHAN_ID_DEV_NUM - Channel ID: Device Number. 
+#ifndef BPWR_CHAN_ID_DEV_NUM
+#define BPWR_CHAN_ID_DEV_NUM 1
 #endif
 
-// <o> CHAN_ID_TRANS_TYPE - Channel ID: Transmission type. 
-#ifndef CHAN_ID_TRANS_TYPE
-#define CHAN_ID_TRANS_TYPE 5
+// <o> BSC_CHAN_ID_DEV_NUM - Channel ID: Device Number. 
+#ifndef BSC_CHAN_ID_DEV_NUM
+#define BSC_CHAN_ID_DEV_NUM 49
+#endif
+
+// <o> BPWR_CHAN_ID_TRANS_TYPE - Channel ID: Transmission type. 
+#ifndef BPWR_CHAN_ID_TRANS_TYPE
+#define BPWR_CHAN_ID_TRANS_TYPE 5
+#endif
+
+// <o> BSC_CHAN_ID_TRANS_TYPE - Channel ID: Transmission type. 
+#ifndef BSC_CHAN_ID_TRANS_TYPE
+#define BSC_CHAN_ID_TRANS_TYPE 1 // TODO: what is this?
 #endif
 
 // <h> MANUFACTURER_IDENTIFICATION_COMMON_PAGE 
@@ -4908,7 +4918,7 @@
 //==========================================================
 // <o> NRF_SDH_ANT_TOTAL_CHANNELS_ALLOCATED - Allocated ANT channels. 
 #ifndef NRF_SDH_ANT_TOTAL_CHANNELS_ALLOCATED
-#define NRF_SDH_ANT_TOTAL_CHANNELS_ALLOCATED 1
+#define NRF_SDH_ANT_TOTAL_CHANNELS_ALLOCATED 2
 #endif
 
 // <o> NRF_SDH_ANT_ENCRYPTED_CHANNELS - Encrypted ANT channels. 

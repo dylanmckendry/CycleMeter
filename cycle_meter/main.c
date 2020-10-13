@@ -29,8 +29,8 @@ void ant_bpwr_calib_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_page1_data_
 
 BPWR_SENS_CHANNEL_CONFIG_DEF(m_ant_bpwr,
                              BPWR_CHANNEL_NUM,
-                             CHAN_ID_TRANS_TYPE,
-                             CHAN_ID_DEV_NUM,
+                             BPWR_CHAN_ID_TRANS_TYPE,
+                             BPWR_CHAN_ID_DEV_NUM,
                              ANTPLUS_NETWORK_NUM);
 
 BPWR_SENS_PROFILE_CONFIG_DEF(m_ant_bpwr,
@@ -50,9 +50,9 @@ void ant_bsc_evt_handler(ant_bsc_profile_t * p_profile, ant_bsc_evt_t event);
 
 BSC_SENS_CHANNEL_CONFIG_DEF(m_ant_bsc,
                             BSC_CHANNEL_NUM,
-                            CHAN_ID_TRANS_TYPE,
+                            BSC_CHAN_ID_TRANS_TYPE,
                             BSC_SENSOR_TYPE,
-                            CHAN_ID_DEV_NUM,
+                            BSC_CHAN_ID_DEV_NUM,
                             ANTPLUS_NETWORK_NUM);
 
 BSC_SENS_PROFILE_CONFIG_DEF(m_ant_bsc,
@@ -115,13 +115,13 @@ void ant_bpwr_calib_handler(ant_bpwr_profile_t * p_profile, ant_bpwr_page1_data_
     {
         case ANT_BPWR_CALIB_ID_MANUAL:
             m_ant_bpwr.BPWR_PROFILE_calibration_id     = ANT_BPWR_CALIB_ID_MANUAL_SUCCESS;
-            m_ant_bpwr.BPWR_PROFILE_general_calib_data = CALIBRATION_DATA;
+            m_ant_bpwr.BPWR_PROFILE_general_calib_data = BPWR_CALIBRATION_DATA;
             break;
 
         case ANT_BPWR_CALIB_ID_AUTO:
             m_ant_bpwr.BPWR_PROFILE_calibration_id     = ANT_BPWR_CALIB_ID_MANUAL_SUCCESS;
             m_ant_bpwr.BPWR_PROFILE_auto_zero_status   = p_page1->auto_zero_status;
-            m_ant_bpwr.BPWR_PROFILE_general_calib_data = CALIBRATION_DATA;
+            m_ant_bpwr.BPWR_PROFILE_general_calib_data = BPWR_CALIBRATION_DATA;
             break;
 
         case ANT_BPWR_CALIB_ID_CUSTOM_REQ:
