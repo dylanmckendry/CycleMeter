@@ -14,3 +14,8 @@
 - MPU 9520
 - BMP280 (two)
 - Hall effect sensor (two)
+
+## Hardware Ideas
+### Regulator Low-Voltage Cutoff
+ - https://www.pololu.com/product/2871
+ - https://www.pololu.com/product/2873
