@@ -1,4 +1,5 @@
 # CycleMeter
+The first version of this was made with Arduino. The Arduino I was using was too slow so I decided to update the hardware (this was more time consuming that expected).
 
 ## Building
 - Download nRF5 v17 from https://www.nordicsemi.com/Software-and-tools/Software/nRF5-SDK/Download
