@@ -10,6 +10,56 @@ The first version of this was made with Arduino. The Arduino I was using was too
 - Uncomment #define ANT_LICENSE_KEY "<license-key>" in ../nRF5SDK17/components/softdevice/s212/headers/nrf_sdm.h
 - Add network keys to ../nRF5SDK17/components/ant/ant_key_manager/config/ant_key_manager_config.h from https://www.thisisant.com/developer/ant-plus/ant-plus-basics/network-keys
 
+## Building (nRF Connect for VS Code)
+- Installed https://pyocd.io/docs/installing
+- Set up ANT SDK from here https://github.com/ant-nrfconnect
+
+### Added to settings
+```
+    "nrf-connect.applicationOptions": {
+        "${workspaceFolder}": {
+            "flash": {
+                "softreset": false,
+                "skipBuild": false,
+                "extraArgs": ["--runner", "pyocd", "--target", "nrf52840"]
+            }
+        }
+    }
+```
+### Added to launch
+```
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "nrf-connect",
+			"request": "attach",
+			"name": "Launch untitled/build",
+			"config": "${workspaceFolder}/build",
+			"gdbServer": {
+                "address": "127.0.0.1:3333",
+                "path": "west",
+                "args": "debugserver --runner pyocd --target nrf52840 --build-dir ${activeConfig}"
+            }
+		},
+		{
+			"type": "nrf-connect",
+			"request": "attach",
+			"name": "Launch untitled/build/untitled",
+			"config": "${workspaceFolder}/build/untitled",
+			"gdbServer": {
+                "address": "127.0.0.1:3333",
+                "path": "west",
+                "args": "debugserver --runner pyocd --target nrf52840 --build-dir ${activeConfig}"
+            }
+		}
+	]
+}
+
+```
+
+
+
 ## Hardware
 - nRF52840 MDK USB Dongle
 - MPU 9520
